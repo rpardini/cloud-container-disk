@@ -2,6 +2,7 @@ import logging
 
 import click
 
+from fedora import Fedora
 from rocky import Rocky
 from utils import setup_logging
 
@@ -28,9 +29,14 @@ def rocky(release, variant, rocky_mirror, rocky_vault_mirror):
 	r.cli_the_whole_shebang()
 
 
-@cli.command()
-def fedora():
-	click.echo('Fedora')
+@cli.command(help="Fedora Cloud images, extracts kernel and initrd from qcow2")
+@click.option('--release', envvar="RELEASE", default="39", help='Fedora release; can be 39 etc')
+@click.option('--mirror', envvar="FEDORA_MIRROR", default="https://download.fedoraproject.org/pub/fedora",
+			  help='Fedora mirror')
+def fedora(release, mirror):
+	log.info('Fedora')
+	f = Fedora(release, mirror)
+	f.cli_the_whole_shebang()
 
 
 if __name__ == '__main__':

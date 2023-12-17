@@ -1,0 +1,67 @@
+name: fedora-39
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    paths:
+      - 'info/*.py'
+      - '.github/workflows/fedora-39.yml'
+jobs:
+  fedora-39:
+    
+    permissions:
+      packages: write
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout build repo
+        uses: actions/checkout@v4
+
+      - name: Docker Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }} # GitHub username or org
+          password: ${{ secrets.GITHUB_TOKEN }}    # GitHub actions builtin token. repo has to have pkg access.
+
+      - name: qemu-utils dep & modprobe nbd
+        run: |
+          sudo apt install qemu-utils
+          sudo modprobe nbd max_part=8
+
+      - name: setup python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+          #cache: 'pip' # caching pip dependencies
+
+      - name: install pip deps
+        run: |
+          sudo --preserve-env python3 -m pip install --upgrade pip
+          sudo --preserve-env python3 -m pip install -r requirements.txt
+
+      - name: Cache Rocky qcow2 aarch64
+        uses: actions/cache@v2
+        with:
+          path: |
+            Fedora-Cloud-Base-39-*.aarch64.qcow2
+          key: aarch64-Fedora-Cloud-Base-39-qcow2
+          restore-keys: |
+            aarch64-Fedora-Cloud-Base-39-qcow2
+
+      - name: Cache Rocky qcow2 x86_64
+        uses: actions/cache@v2
+        with:
+          path: |
+            Fedora-Cloud-Base-39-*.x86_64.qcow2
+          key: x86_64-Fedora-Cloud-Base-39-qcow2
+          restore-keys: |
+            x86_64-Fedora-Cloud-Base-39-qcow2
+
+      - name: Run magic script
+        id: magic
+        env:
+          BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
+          RELEASE: "39"
+        run: |
+          sudo --preserve-env python3 info/cli.py fedora || true

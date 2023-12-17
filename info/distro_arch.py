@@ -38,8 +38,8 @@ class DistroBaseArchInfo:
 		# Only download if filename is not already downloaded.
 		if not os.path.exists(self.qcow2_filename):
 			log.info(f"Downloading {self.qcow2_url} to {self.qcow2_filename}")
-			# Use the shell to do the download, using curl -o's output filename option.
-			shell_passthrough([f"curl", "-o", f"{self.qcow2_filename}.tmp", f"{self.qcow2_url}"])
+			# Use the shell to do the download, using curl -o's output filename option. -L follows redirects.
+			shell_passthrough([f"curl", "-L", "-o", f"{self.qcow2_filename}.tmp", f"{self.qcow2_url}"])
 			log.info(f"Downloaded {self.qcow2_url} to {self.qcow2_filename}.tmp")
 
 			# Rename the temp file to the final filename.
