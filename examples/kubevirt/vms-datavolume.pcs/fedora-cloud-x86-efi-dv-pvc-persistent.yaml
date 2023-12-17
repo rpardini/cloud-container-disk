@@ -1,0 +1,110 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-cloud-x86-efi-dv-pvc-persistent
+spec:
+  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: fedora-cloud-x86-efi-dv-pvc-persistent
+        app.kubernetes.io/name: VM_fedora-cloud-x86-efi-dv-pvc-persistent # For Hubble & others
+    spec:
+      architecture: amd64
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      domain:
+        # machine.type not specified, defaults to q35
+        chassis:
+          serial: pardini-chassis-serial
+          asset: pardini-chassis-asset
+          sku: pardini-chassis-sku
+          version: pardini-chassis-version
+          manufacturer: "pardini-chassis-manufacturer"
+        
+        firmware:
+          # UEFI: boots grub which defines cmdline, kernel & initrd # 
+          bootloader:
+            efi:
+              secureBoot: false
+        
+        cpu:
+          cores: 4
+        devices:
+          autoattachGraphicsDevice: false # no graphics, thanks
+          disks:
+            - disk:
+                bus: virtio
+              name: datavolumedisk1
+              serial: datavolumedisk1serial
+              cache: writeback
+
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+              serial: cloudinitdiskserial
+
+            #- name: emptydisk
+            #  serial: emptydiskserial
+            #  cache: writeback
+            #  disk:
+            #    bus: virtio
+          
+          interfaces:
+            - masquerade: { }
+              name: default
+          rng: { } # source of randomness
+        resources:
+          requests:
+            memory: 4G
+      networks:
+        - name: default
+          pod: { }
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - dataVolume:
+            name: fedora-cloud-39-1.5-x86-64
+          name: datavolumedisk1
+
+        - cloudInitConfigDrive: # auto create .ISOs for us, thanks.
+            userData: |-
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/fedora_cloud_kubevirt_amd64
+          name: cloudinitdisk
+
+        - name: emptydisk # throwaway disk, for testing. does not persist.
+          emptyDisk:
+            capacity: 2Gi
+
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-cloud-39-1.5-x86-64
+      spec:
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+          storageClassName: "${nsUtil.getStorageClassForPVC('armbian-bookworm-edge-x86-kernelboot-moar', 'longhorn')}"
+        source:
+          http:
+            url: https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.raw.xz
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fedora-cloud-x86-efi-dv-pvc-persistent
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: nodeport
+      nodePort: 32222
+      port: 27222
+      protocol: TCP
+      targetPort: 22
+  selector:
+    app.kubernetes.io/name: VM_fedora-cloud-x86-efi-dv-pvc-persistent
+  type: NodePort

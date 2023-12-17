@@ -1,0 +1,94 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-cloud-arm64-efi-dv-pvc-persistent
+spec:
+  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-coreos-39-openstack-aarch64
+      spec:
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+          storageClassName: "${nsUtil.getStorageClassForPVC('armbian-bookworm-edge-x86-kernelboot-moar', 'longhorn')}"
+        source:
+          http:
+            url: https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/39.20231119.3.0/aarch64/fedora-coreos-39.20231119.3.0-openstack.aarch64.qcow2.xz
+  
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: armbian-bookworm-edge-arm64-kernelboot-moar
+        app.kubernetes.io/name: VM_armbian-bookworm-edge-arm64-kernelboot-moar # For Hubble & others
+    spec:
+      architecture: arm64
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      domain:
+        # machine.type not specified, defaults to q35
+        chassis:
+          serial: pardini-chassis-serial
+          asset: pardini-chassis-asset
+          sku: pardini-chassis-sku
+          version: pardini-chassis-version
+          manufacturer: "pardini-chassis-manufacturer"
+        
+        firmware:
+          # UEFI: boots grub which defines cmdline, kernel & initrd # 
+          bootloader:
+            efi:
+              secureBoot: false
+        
+        cpu:
+          cores: 4
+        devices:
+          autoattachGraphicsDevice: false # no graphics, thanks
+          disks:
+            - disk:
+                bus: virtio
+              name: datavolumedisk1
+              serial: datavolumedisk1serial
+              cache: writeback
+
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+              serial: cloudinitdiskserial
+
+            #- name: emptydisk
+            #  serial: emptydiskserial
+            #  cache: writeback
+            #  disk:
+            #    bus: virtio
+          
+          interfaces:
+            - masquerade: { }
+              name: default
+          rng: { } # source of randomness
+        resources:
+          requests:
+            memory: 4G
+      networks:
+        - name: default
+          pod: { }
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - dataVolume:
+            name: fedora-coreos-39-openstack-aarch64
+          name: datavolumedisk1
+
+        - cloudInitNoCloud: # auto create .ISOs for us, thanks.
+            userData: |-
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/fedora_cloud_kubevirt_arm64
+          name: cloudinitdisk
+
+        - name: emptydisk # throwaway disk, for testing. does not persist.
+          emptyDisk:
+            capacity: 2Gi
+
