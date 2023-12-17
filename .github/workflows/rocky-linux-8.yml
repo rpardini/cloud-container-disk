@@ -37,10 +37,11 @@ jobs:
       
       
       # install beautifulsoup4
-      - name: install beautifulsoup4
+      - name: install pip deps
         run: |
           sudo --preserve-env python3 -m pip install --upgrade pip
           sudo --preserve-env python3 -m pip install beautifulsoup4
+          sudo --preserve-env python3 -m pip install rich
 
       - name: Cache Rocky qcow2 aarch64
         uses: actions/cache@v2
@@ -65,8 +66,7 @@ jobs:
         env:
           ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
           #ROCKY_MIRROR: "https://rocky-linux-us-east1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
-          DISK_OCI_REF: "ghcr.io/${{ github.repository_owner }}/rocky-cloud-container-disk"
-          KERNEL_OCI_REF: "ghcr.io/${{ github.repository_owner }}/rocky-cloud-kernel-kv"
+          BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
           RELEASE: "8"
         run: |
           sudo --preserve-env python3 info/rocky.py || true

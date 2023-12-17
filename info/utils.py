@@ -1,32 +1,39 @@
 # Pay attention, work step by step, use modern (3.10+) Python syntax and features.
 
 import glob
+import logging
 import string
 import subprocess
+from urllib.request import urlopen
+
+from bs4 import BeautifulSoup
+from rich.logging import RichHandler
+
+log = logging.getLogger("utils")
 
 
 def shell(arg_list: list[string]):
 	# execute a shell command, passing the shell-escaped arg list; throw and exception if the exit code is not 0
-	print(f"shell: {arg_list}")
+	log.info(f"shell: {arg_list}")
 	result = subprocess.run(arg_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	if result.returncode != 0:
 		raise Exception(
 			f"shell command failed: {arg_list} with return code {result.returncode} and stderr {result.stderr}")
 	utf8_stdout = result.stdout.decode("utf-8")
-	print(f"shell: {arg_list} exitcode: {result.returncode} stdout:\n{utf8_stdout}")
+	log.info(f"shell: {arg_list} exitcode: {result.returncode} stdout:\n{utf8_stdout}")
 	return utf8_stdout
 
 
 def shell_passthrough(arg_list: list[string]):
 	# execute a shell command, passing the shell-escaped arg list; throw and exception if the exit code is not 0
-	print(f"shell: {arg_list}")
+	log.info(f"shell: {arg_list}")
 
 	# run the process. let it inherit stdin/stdout/stderr
 	result = subprocess.run(arg_list)
 	if result.returncode != 0:
 		raise Exception(
 			f"shell command failed: {arg_list} with return code {result.returncode} ")
-	print(f"shell: {arg_list} exitcode: {result.returncode}")
+	log.info(f"shell: {arg_list} exitcode: {result.returncode}")
 
 
 # ‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
@@ -44,7 +51,7 @@ class NBDImageMounter:
 
 	def __enter__(self):
 		shell(["udevadm", "settle"])
-		print(f"Connecting {self.image_filename} to nbd device {self.nbd_device}")
+		log.info(f"Connecting {self.image_filename} to nbd device {self.nbd_device}")
 		shell(["qemu-nbd", f"--connect={self.nbd_device}", f"{self.image_filename}"])
 		shell(["partprobe", f"{self.nbd_device}"])
 		shell(["fdisk", "-l", f"{self.nbd_device}"])
@@ -52,7 +59,7 @@ class NBDImageMounter:
 		return self
 
 	def __exit__(self, *args):
-		print(f"Disconnecting {self.nbd_device}")
+		log.info(f"Disconnecting {self.nbd_device}")
 		shell(["qemu-nbd", "--disconnect", f"{self.nbd_device}"])
 
 
@@ -67,25 +74,54 @@ class DevicePathMounter:
 		self.mountpoint = mountpoint
 
 	def __enter__(self):
-		print(f"Mounting {self.device_path}p{self.partition_num} to {self.mountpoint}")
+		log.info(f"Mounting {self.device_path}p{self.partition_num} to {self.mountpoint}")
 		shell(["mkdir", "-p", f"{self.mountpoint}"])
 		shell([f"mount", f"{self.device_path}p{self.partition_num}", f"{self.mountpoint}"])
 		return self
 
 	def __exit__(self, *args):
-		print(f"Unmounting {self.mountpoint}")
-		print(f"Unmounting {self.mountpoint}")
+		log.info(f"Unmounting {self.mountpoint}")
 		shell([f"umount", f"{self.mountpoint}"])
+		log.info(f"Removing {self.mountpoint}")
+		shell(["rmdir", f"{self.mountpoint}"])
 
 	def glob_non_rescue(self, glob_pattern):
 		all_globs = glob.glob(glob_pattern, root_dir=f"{self.mountpoint}")
-		print(f"all_globs: {all_globs}")
+		log.info(f"all_globs: {all_globs}")
 		all_globs = [vmlinuz for vmlinuz in all_globs if "-rescue" not in vmlinuz]
 
 		if len(all_globs) != 1:
 			raise Exception(f"Found {len(all_globs)} '{glob_pattern}' files in {self.mountpoint}: {all_globs}")
 
 		result = all_globs[0]
-		print(f"glob single result: {result}")
+		log.info(f"glob single result: {result}")
 
 		return result
+
+
+def get_url_and_parse_html_hrefs(index_url):
+	with urlopen(index_url) as response:
+		# Use beautifulsoup4 to parse the HTML.
+		soup = BeautifulSoup(response, "html.parser")
+		# Find all the hrefs.
+		hrefs = soup.find_all("a")
+		# Loop over the hrefs and print them out.
+		links = []
+		for href in hrefs:
+			href_value = href.get("href")
+			# skip empty hrefs
+			if href_value is None:
+				continue
+			links.append(href_value)
+		return links
+
+
+# logging with rich
+def setup_logging(name: string) -> logging.Logger:
+	logging.basicConfig(
+		level="DEBUG",
+		format="%(message)s",
+		datefmt="[%X]",
+		handlers=[RichHandler(rich_tracebacks=True)]
+	)
+	return logging.getLogger(name)
