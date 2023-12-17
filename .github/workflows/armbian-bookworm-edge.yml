@@ -1,11 +1,11 @@
-name: armbian-bookworm
+name: armbian-bookworm-edge
 on:
   workflow_dispatch:
   workflow_call:
   push:
     paths:
       - 'containerDisk-armbian.sh'
-      - '.github/workflows/armbian-bookworm.yml'
+      - '.github/workflows/armbian-bookworm-edge.yml'
 jobs:
   armbian-bookworm:
     
