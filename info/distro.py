@@ -4,6 +4,8 @@ import os
 import string
 from abc import abstractmethod
 
+from rich.pretty import pprint
+
 from containerdisk import MultiArchImage
 from distro_arch import DistroBaseArchInfo
 from utils import setup_logging
@@ -36,11 +38,12 @@ class DistroBaseInfo:
 	def prepare_version(self) -> string:
 		version_set: set[string] = set()
 		for arch in self.arches:
-			log.info(f"Architecture: {arch.slug}: {arch}")
+			log.info("[green]Grabbing version for arch: [bold]%s[/green][/bold]", arch.slug)
 			arch.grab_version()
 			version_set.add(arch.version)
 
 		log.info(f"version_set: {version_set}")
+		pprint(version_set)
 		self.set_version_from_arch_versions(version_set)
 
 		# ensure self.version, self.oci_tag_version and self.oci_tag_latest are set
@@ -101,7 +104,8 @@ class DistroBaseInfo:
 
 		oci_images: list[MultiArchImage] = [self.get_oci_def_kernel(), self.get_oci_def_disk()]
 		for oci_image in oci_images:
-			log.info(f"oci_image: {oci_image.type}")
+			log.info("oci_image: %s", oci_image)
+			pprint(oci_image)
 			oci_image.build()
 			oci_image.push()
 			log.info("--------------------------------------------------------------------------------------------")

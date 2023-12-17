@@ -16,14 +16,17 @@ class Rocky(DistroBaseInfo):
 	arches: list["RockyArchInfo"]
 
 	# Read from environment var RELEASE, or use default.
-	ROCKY_VERSION = os.environ.get("RELEASE", "8")
-	ROCKY_VARIANT = os.environ.get("VARIANT", "GenericCloud-LVM")
+	ROCKY_RELEASE: string
+	ROCKY_VARIANT: string
+	ROCKY_MIRROR: string
+	ROCKY_VAULT_MIRROR: string
 
-	# ROCKY_MIRROR="https://rocky-linux-europe-west4.production.gcp.mirrors.ctrliq.cloud/pub/rocky" python3 info/rocky.py
-	ROCKY_MIRROR = os.environ.get("ROCKY_MIRROR", "https://dl.rockylinux.org/pub/rocky")
-	ROCKY_VAULT_MIRROR = os.environ.get("ROCKY_VAULT_MIRROR", "https://dl.rockylinux.org/vault/rocky")
+	def __init__(self, rocky_version, rocky_variant, rocky_mirror, rocky_vault_mirror):
+		self.ROCKY_RELEASE = rocky_version
+		self.ROCKY_VARIANT = rocky_variant
+		self.ROCKY_MIRROR = rocky_mirror
+		self.ROCKY_VAULT_MIRROR = rocky_vault_mirror
 
-	def __init__(self):
 		super().__init__(
 			arches=[
 				RockyArchInfo(distro=self, docker_slug="arm64", slug="aarch64"),
@@ -35,8 +38,8 @@ class Rocky(DistroBaseInfo):
 
 	def set_version_from_arch_versions(self, arch_versions: set[string]) -> string:
 		self.version = "-".join(arch_versions)  # just join all distinct versions, hopefully there is only one
-		self.oci_tag_version = self.ROCKY_VERSION + "-" + self.version
-		self.oci_tag_latest = self.ROCKY_VERSION + "-latest"
+		self.oci_tag_version = self.ROCKY_RELEASE + "-" + self.version
+		self.oci_tag_latest = self.ROCKY_RELEASE + "-latest"
 
 
 class RockyArchInfo(DistroBaseArchInfo):
@@ -47,9 +50,12 @@ class RockyArchInfo(DistroBaseArchInfo):
 
 	def grab_version(self):
 		indexes_to_try = [
-			f"{self.distro.ROCKY_MIRROR}/{self.distro.ROCKY_VERSION}/images/{self.slug}/",
-			f"{self.distro.ROCKY_VAULT_MIRROR}/{self.distro.ROCKY_VERSION}/images/{self.slug}/"
+			f"{self.distro.ROCKY_MIRROR}/{self.distro.ROCKY_RELEASE}/images/{self.slug}/",
+			f"{self.distro.ROCKY_VAULT_MIRROR}/{self.distro.ROCKY_RELEASE}/images/{self.slug}/"
 		]
+
+		# Log the indexes
+		log.info(f"Trying indexes: {indexes_to_try}")
 
 		for index_url in indexes_to_try:
 			try:
@@ -64,7 +70,7 @@ class RockyArchInfo(DistroBaseArchInfo):
 
 		self.qcow2_hrefs = [
 			href for href in self.all_hrefs
-			if href.endswith(".qcow2") and ".latest." not in href and Rocky.ROCKY_VARIANT in href
+			if href.endswith(".qcow2") and ".latest." not in href and self.distro.ROCKY_VARIANT in href
 		]
 
 		# Make sure there is only one qcow2 href.
@@ -82,10 +88,3 @@ class RockyArchInfo(DistroBaseArchInfo):
 
 		# full url
 		self.qcow2_url = self.index_url + self.qcow2_filename
-
-	def __str__(self):
-		return f"docker_slug: {self.docker_slug}, slug: {self.slug}, version: {self.version}, qcow2_url: {self.qcow2_url}"
-
-
-rocky = Rocky()
-rocky.cli_the_whole_shebang()

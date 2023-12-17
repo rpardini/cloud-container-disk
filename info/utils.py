@@ -2,14 +2,18 @@
 
 import glob
 import logging
+import os
 import string
 import subprocess
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+from rich.console import Console
 from rich.logging import RichHandler
 
 log = logging.getLogger("utils")
+
+singleton_console: Console | None = None
 
 
 def shell(arg_list: list[string]):
@@ -20,7 +24,7 @@ def shell(arg_list: list[string]):
 		raise Exception(
 			f"shell command failed: {arg_list} with return code {result.returncode} and stderr {result.stderr}")
 	utf8_stdout = result.stdout.decode("utf-8")
-	log.info(f"shell: {arg_list} exitcode: {result.returncode} stdout:\n{utf8_stdout}")
+	log.debug(f"shell: {arg_list} exitcode: {result.returncode} stdout:\n{utf8_stdout}")
 	return utf8_stdout
 
 
@@ -33,7 +37,7 @@ def shell_passthrough(arg_list: list[string]):
 	if result.returncode != 0:
 		raise Exception(
 			f"shell command failed: {arg_list} with return code {result.returncode} ")
-	log.info(f"shell: {arg_list} exitcode: {result.returncode}")
+	log.debug(f"shell: {arg_list} exitcode: {result.returncode}")
 
 
 # ‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
@@ -118,10 +122,18 @@ def get_url_and_parse_html_hrefs(index_url):
 
 # logging with rich
 def setup_logging(name: string) -> logging.Logger:
+	global singleton_console
+	if singleton_console is not None:
+		return logging.getLogger(name)
+
+	# console width is COLUMNS env var minus 12, or just 160 if GITHUB_ACTIONS env is not empty
+	console_width = (int(os.environ.get("COLUMNS", 160)) - 12) if os.environ.get("GITHUB_ACTIONS", "") == "" else 160
+	singleton_console = Console(color_system="standard", width=console_width, highlight=False)
+
 	logging.basicConfig(
 		level="DEBUG",
-		format="%(message)s",
+		# format="%(message)s",
 		datefmt="[%X]",
-		handlers=[RichHandler(rich_tracebacks=True)]
+		handlers=[RichHandler(rich_tracebacks=True, markup=True, console=singleton_console)]
 	)
 	return logging.getLogger(name)

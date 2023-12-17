@@ -34,14 +34,11 @@ jobs:
         with:
           python-version: "3.10"
           #cache: 'pip' # caching pip dependencies
-      
-      
-      # install beautifulsoup4
+
       - name: install pip deps
         run: |
           sudo --preserve-env python3 -m pip install --upgrade pip
-          sudo --preserve-env python3 -m pip install beautifulsoup4
-          sudo --preserve-env python3 -m pip install rich
+          sudo --preserve-env python3 -m pip install -r requirements.txt
 
       - name: Cache Rocky qcow2 aarch64
         uses: actions/cache@v2
@@ -69,4 +66,4 @@ jobs:
           BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
           RELEASE: "8"
         run: |
-          sudo --preserve-env python3 info/rocky.py || true
+          sudo --preserve-env python3 info/cli.py rocky || true
