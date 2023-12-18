@@ -78,7 +78,7 @@ class RockyArchInfo(DistroBaseArchInfo):
 			raise Exception(f"Found {len(self.qcow2_hrefs)} qcow2 hrefs for {self.slug}: {self.qcow2_hrefs}")
 
 		self.qcow2_filename = self.qcow2_hrefs[0]
-		qcow2_basename = os.path.basename(self.qcow2_filename)
+		qcow2_basename = os.path.basename(self.qcow2_filename)[:-len(".qcow2")]
 		self.vmlinuz_final_filename = f"{qcow2_basename}.vmlinuz"
 		self.initramfs_final_filename = f"{qcow2_basename}.initramfs"
 

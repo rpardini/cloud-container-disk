@@ -9,27 +9,36 @@ from distro_arch import DistroBaseArchInfo
 from utils import get_url_and_parse_html_hrefs
 from utils import setup_logging
 
-log: logging.Logger = setup_logging("fedora")
+log: logging.Logger = setup_logging("debian")
 
 
-class Fedora(DistroBaseInfo):
-	arches: list["FedoraArchInfo"]
+class Debian(DistroBaseInfo):
+	arches: list["DebianArchInfo"]
 
 	# Read from environment var RELEASE, or use default.
 	release: string
+	variant: string
 	mirror: string
 
-	def __init__(self, release, mirror):
+	def __init__(self, release, variant, mirror):
 		self.release = release
+		self.variant = variant
 		self.mirror = mirror
 
 		super().__init__(
 			arches=[
-				FedoraArchInfo(distro=self, docker_slug="arm64", slug="aarch64"),
-				FedoraArchInfo(distro=self, docker_slug="amd64", slug="x86_64")
+				DebianArchInfo(distro=self, docker_slug="arm64", slug="arm64"),
+				DebianArchInfo(distro=self, docker_slug="amd64", slug="amd64")
 			],
-			default_oci_ref_disk="fedora-cloud-container-disk",
-			default_oci_ref_kernel="fedora-cloud-kernel-kv"
+			default_oci_ref_disk="debian-cloud-container-disk",
+			default_oci_ref_kernel="debian-cloud-kernel-kv"
+		)
+
+	def handle_extract_kernel_initrd(self, arch, nbd_counter):
+		log.warning("Debian has a single partition qcow2, so we need to extract from partition 1, not 2.")
+		arch.extract_kernel_initrd_from_qcow2(
+			nbd_counter, partition_num=1,
+			vmlinuz_glob="boot/vmlinuz-*", initramfs_glob="boot/initrd.img-*"
 		)
 
 	def set_version_from_arch_versions(self, arch_versions: set[string]) -> string:
@@ -38,16 +47,14 @@ class Fedora(DistroBaseInfo):
 		self.oci_tag_latest = self.release + "-latest"
 
 
-class FedoraArchInfo(DistroBaseArchInfo):
-	distro: "Fedora"
+class DebianArchInfo(DistroBaseArchInfo):
+	distro: "Debian"
 	index_url: string = None
 	all_hrefs: list[string]
 	qcow2_hrefs: list[string]
 
 	def grab_version(self):
-		indexes_to_try = [
-			f"{self.distro.mirror}/linux/releases/{self.distro.release}/Cloud/{self.slug}/images/"
-		]
+		indexes_to_try = [f"{self.distro.mirror}/{self.distro.release}/daily/"]
 
 		# Log the indexes
 		log.info(f"Trying indexes: {indexes_to_try}")
@@ -63,10 +70,29 @@ class FedoraArchInfo(DistroBaseArchInfo):
 		if self.index_url is None:
 			raise Exception(f"Could not find valid index for {self.slug}")
 
-		self.qcow2_hrefs = [
+		datey_hrefs = list(set([  # make unique, there's duplicate links
+			href[:-1] for href in self.all_hrefs  # remove trailing slash
+			if href.startswith('20') and href.endswith("/")  # won't work in 22nd century
+		]))
+		log.debug(f"datey_hrefs: {datey_hrefs}")
+
+		# sort ascending, hope for the best; Python sort mutates the list
+		datey_hrefs.sort()
+
+		# get the last one
+		self.version = datey_hrefs[-1]
+
+		log.info(f"self.version: '{self.version}' out of {len(datey_hrefs)} possible.")
+
+		self.index_url = self.index_url + self.version + "/"
+		log.info(f"self.index_url: {self.index_url}")
+
+		self.all_hrefs = get_url_and_parse_html_hrefs(self.index_url)
+
+		self.qcow2_hrefs = list(set([  # make unique, there's duplicate links
 			href for href in self.all_hrefs
-			if href.endswith(".qcow2") and ".latest." not in href
-		]
+			if href.endswith(".qcow2") and ("-" + self.slug + "-") in href and ("-" + self.distro.variant + "-") in href
+		]))
 
 		# Make sure there is only one qcow2 href.
 		if len(self.qcow2_hrefs) != 1:
@@ -77,14 +103,4 @@ class FedoraArchInfo(DistroBaseArchInfo):
 		self.vmlinuz_final_filename = f"{qcow2_basename}.vmlinuz"
 		self.initramfs_final_filename = f"{qcow2_basename}.initramfs"
 
-		# Parse version out of the qcow2_href. very fragile.
-		dash_split = self.qcow2_filename.split("-")
-		log.info(f"dash_split: {dash_split}")
-
-		release_from_split = dash_split[3]
-		assert release_from_split == self.distro.release, f"release_from_split: {release_from_split} != self.distro.release: {self.distro.release}"
-
-		self.version = dash_split[4].replace(f".{self.slug}.qcow2", "")
-
-		# full url
 		self.qcow2_url = self.index_url + self.qcow2_filename

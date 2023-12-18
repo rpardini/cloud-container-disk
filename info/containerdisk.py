@@ -3,12 +3,20 @@ import logging
 import string
 from abc import abstractmethod
 
+from rich.syntax import Syntax
+
+from utils import global_console
 from utils import setup_logging
 from utils import shell
 from utils import shell_passthrough
 
 log: logging.Logger = setup_logging("containerDisk")
 
+
+# @TODO: the LABELs need a lot of work, info has to be passed down from the distro to the arch to the image
+# @TODO: also, store the original vmlinuz/initrd filenames (not qcow2-derived)
+
+# @TODO: refactor, stop doing the same stuff twice for latest and versioned tags
 
 class BaseOCISingleArchImage:
 	oci_ref: string
@@ -25,14 +33,15 @@ class BaseOCISingleArchImage:
 	def build(self):
 		log.info(f"Building {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest}")
 		contents = self.dockerfile()
-		log.info(f"contents:\n{contents}")
+
+		global_console().print(Syntax(contents, "dockerfile"))
 
 		# write contents to "Dockerfile"
 		with open("Dockerfile", "w") as f:
 			f.write(contents)
 
 		ignores = self.dockerignore()
-		log.info(f"ignores:\n{ignores}")
+		global_console().print(Syntax(ignores, "dockerignore"))
 
 		# write ignores to ".dockerignore"
 		with open(".dockerignore", "w") as f:
@@ -74,11 +83,11 @@ class ArchContainerKernelImage(BaseOCISingleArchImage):
 		self.initramfs_filename = initramfs_filename
 
 	def dockerfile(self):
-		return f"""
-		FROM scratch
-		ADD --chown=107:107 {self.kernel_filename} /boot/vmlinuz
-		ADD --chown=107:107 {self.initramfs_filename} /boot/initrd
-		"""
+		return f"""FROM scratch
+ADD --chown=107:107 {self.kernel_filename} /boot/vmlinuz
+ADD --chown=107:107 {self.initramfs_filename} /boot/initrd
+LABEL org.opencontainers.image.description="Cloud image kernel and initrd image version '{self.tag_version}' for arch {self.docker_arch} containing {self.kernel_filename} as /boot/vmlinuz and {self.initramfs_filename} as /boot/initrd"
+"""
 
 
 class ArchContainerDiskImage(BaseOCISingleArchImage):
@@ -89,10 +98,10 @@ class ArchContainerDiskImage(BaseOCISingleArchImage):
 		self.qcow2_filename = qcow2_filename
 
 	def dockerfile(self):
-		return f"""
-		FROM scratch
-		ADD --chown=107:107 {self.qcow2_filename} /disk/{self.qcow2_filename}
-		"""
+		return f"""FROM scratch
+ADD --chown=107:107 {self.qcow2_filename} /disk/{self.qcow2_filename}
+LABEL org.opencontainers.image.description="Cloud containerDisk qcow2 version '{self.tag_version}' for arch {self.docker_arch} containing /disk/{self.qcow2_filename}"
+"""
 
 	def dockerignore(self):
 		return f"""*

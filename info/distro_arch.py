@@ -17,9 +17,9 @@ class DistroBaseArchInfo:
 	distro: object  # DistroBaseInfo
 	docker_slug: string
 	slug: string
-	qcow2_filename: string = None
 	version: string = None
-	qcow2_url: string = None
+	qcow2_url: string = None 
+	qcow2_filename: string = None # filename on disk
 	vmlinuz_final_filename: string = None
 	initramfs_final_filename: string = None
 

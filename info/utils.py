@@ -95,6 +95,8 @@ class DevicePathMounter:
 		all_globs = [vmlinuz for vmlinuz in all_globs if "-rescue" not in vmlinuz]
 
 		if len(all_globs) != 1:
+			if len(all_globs) == 0:
+				log.error(f"Found no '{glob_pattern}' files in {self.mountpoint}")
 			raise Exception(f"Found {len(all_globs)} '{glob_pattern}' files in {self.mountpoint}: {all_globs}")
 
 		result = all_globs[0]
@@ -120,15 +122,24 @@ def get_url_and_parse_html_hrefs(index_url):
 		return links
 
 
+def global_console() -> Console:
+	global singleton_console
+	if singleton_console is None:
+		raise Exception("setup_logging() must be called before global_console()")
+	return singleton_console
+
+
 # logging with rich
 def setup_logging(name: string) -> logging.Logger:
 	global singleton_console
 	if singleton_console is not None:
 		return logging.getLogger(name)
 
-	# console width is COLUMNS env var minus 12, or just 160 if GITHUB_ACTIONS env is not empty
-	console_width = (int(os.environ.get("COLUMNS", 160)) - 12) if os.environ.get("GITHUB_ACTIONS", "") == "" else 160
-	singleton_console = Console(color_system="standard", width=console_width, highlight=False)
+	# GHA hacks
+	if os.environ.get("GITHUB_ACTIONS", "") == "":
+		singleton_console = Console(color_system="standard", width=160, highlight=False)
+	else:
+		singleton_console = Console()
 
 	logging.basicConfig(
 		level="DEBUG",

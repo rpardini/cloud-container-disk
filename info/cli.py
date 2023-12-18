@@ -2,8 +2,10 @@ import logging
 
 import click
 
+from debian import Debian
 from fedora import Fedora
 from rocky import Rocky
+from ubuntu import Ubuntu
 from utils import setup_logging
 
 log: logging.Logger = setup_logging("rocky")
@@ -37,6 +39,30 @@ def fedora(release, mirror):
 	log.info('Fedora')
 	f = Fedora(release, mirror)
 	f.cli_the_whole_shebang()
+
+
+@cli.command(help="Debian Cloud images, extracts kernel and initrd from qcow2")
+@click.option('--release', envvar="RELEASE", default="bookworm",
+			  help='Debian release; can be bullseye/bookworm/trixie etc')
+@click.option('--variant', envvar="VARIANT", default="generic",
+			  help='Debian Cloud Linux variant; can be genericcloud, generic, or nocloud')  # See https://gitlab.com/libosinfo/osinfo-db/-/merge_requests/268
+@click.option('--mirror', envvar="DEBIAN_MIRROR", default="https://cloud.debian.org/images/cloud",
+			  help='Debian mirror')
+def debian(release, variant, mirror):
+	log.info('Debian')
+	d = Debian(release, variant, mirror)
+	d.cli_the_whole_shebang()
+
+
+@cli.command(help="Ubuntu Cloud images, extracts kernel and initrd from qcow2")
+@click.option('--release', envvar="RELEASE", default="bookworm",
+			  help='Ubuntu release; can be bullseye/bookworm/trixie etc')
+@click.option('--mirror', envvar="UBUNTU_MIRROR", default="https://cloud-images.ubuntu.com",
+			  help='Ubuntu mirror')
+def ubuntu(release, mirror):
+	log.info('Ubuntu')
+	d = Ubuntu(release, mirror)
+	d.cli_the_whole_shebang()
 
 
 if __name__ == '__main__':

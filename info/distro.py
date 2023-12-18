@@ -70,7 +70,10 @@ class DistroBaseInfo:
 		nbd_counter = 1
 		for arch in self.arches:
 			nbd_counter = nbd_counter + 1
-			arch.extract_kernel_initrd_from_qcow2(nbd_counter)
+			self.handle_extract_kernel_initrd(arch, nbd_counter)
+
+	def handle_extract_kernel_initrd(self, arch, nbd_counter):
+		arch.extract_kernel_initrd_from_qcow2(nbd_counter)
 
 	def get_oci_image_definitions(self) -> list[MultiArchImage]:
 		return [self.get_oci_def_disk(), self.get_oci_def_kernel()]
@@ -111,3 +114,6 @@ class DistroBaseInfo:
 			log.info("--------------------------------------------------------------------------------------------")
 
 		log.info("Done.")
+
+	def template_example(self):
+		pass
