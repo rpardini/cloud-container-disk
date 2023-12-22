@@ -36,7 +36,7 @@ spec:
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
               imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
-            kernelArgs: root=LABEL=cloudimg-rootfs ro console=ttyS0 loglevel=7 direct-kernel-boot=yes
+            kernelArgs: root=LABEL=cloudimg-rootfs ro console=ttyS0 earlyprintk=ttyS0 consoleblank=0 loglevel=7 direct-kernel-boot=yes
         cpu:
           cores: 4
         devices:
