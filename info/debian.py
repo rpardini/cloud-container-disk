@@ -13,6 +13,12 @@ log: logging.Logger = setup_logging("debian")
 
 
 class Debian(DistroBaseInfo):
+	def slug(self) -> string:
+		return f"debian-{self.release}"
+
+	def kernel_cmdline(self) -> list[string]:
+		return ["root=LABEL=cloudimg-rootfs", "ro"]
+
 	arches: list["DebianArchInfo"]
 
 	# Read from environment var RELEASE, or use default.

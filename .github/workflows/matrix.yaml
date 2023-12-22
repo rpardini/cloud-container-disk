@@ -6,10 +6,103 @@ on:
   workflow_dispatch:
 
 jobs:
-  matrix:
-    permissions:
-      packages: write
+
+  prepare:
     runs-on: ubuntu-latest
     steps:
+      - name: Prepare release ID
+        id: prep
+        run: |
+          echo ::set-output name=created::$(date -u +'%Y%m%d-%H%M')
+    outputs:
+      created: ${{ steps.prep.outputs.created }} # refer to as ${{needs.prepare.outputs.created}}
+
+  build:
+    needs: [ prepare ]
+    runs-on: "ubuntu-latest" # ${{ matrix.arch.runner }}
+    strategy:
+      fail-fast: false # let other jobs try to complete if one fails
+      matrix:
+        include:
+          - { distro: rocky, id: "rocky-8", env: { RELEASE: "8" } }
+          - { distro: rocky, id: "rocky-9", env: { RELEASE: "9" } }
+          - { distro: fedora, id: "fedora-39", env: { RELEASE: "39" } }
+          # - { distro: armbian, id: "armbian-bookworm", env: { RELEASE: "bookworm" } }
+          - { distro: debian, id: "debian-bookworm", env: { RELEASE: "bookworm" } }
+          - { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
+          - { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
+    env:
+      BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
+      ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
+    steps:
+
       - name: Checkout build repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Docker Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }} # GitHub username or org
+          password: ${{ secrets.GITHUB_TOKEN }}    # GitHub actions builtin token. repo has to have pkg access.
+
+      - name: qemu-utils dep & modprobe nbd
+        run: |
+          sudo apt install qemu-utils
+          sudo modprobe nbd max_part=8
+
+      - name: setup python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+          #cache: 'pip' # caching pip dependencies
+
+      - name: install pip deps
+        run: |
+          sudo --preserve-env python3 -m pip install --upgrade pip
+          sudo --preserve-env python3 -m pip install -r requirements.txt
+
+      - name: Cache qcow2 aarch64 - ${{matrix.id}}
+        uses: actions/cache@v2
+        with:
+          path: |
+            *.aarch64.qcow2
+            *.arm64.qcow2
+          key: aarch64-${{matrix.id}}-qcow2
+          restore-keys: |
+            aarch64-${{matrix.id}}-qcow2
+
+      - name: Cache qcow2 x86_64 - ${{matrix.id}}
+        uses: actions/cache@v2
+        with:
+          path: |
+            *.x86_64.qcow2
+            *.amd64.qcow2
+          key: x86_64-${{matrix.id}}-qcow2
+          restore-keys: |
+            x86_64-${{matrix.id}}-qcow2
+
+      - name: Run magic script for ${{matrix.id}}
+        id: magic
+        env: ${{ matrix.env }}
+        run: |
+          sudo --preserve-env python3 info/cli.py ${{ matrix.distro }} || true
+          sudo --preserve-env chown -R $USER:$USER . || true
+
+      - name: Commit changes to the examples directory
+        if: ${{ github.repository_owner == 'rpardini' }}
+        run: |
+          git config --global user.name "GHA workflow"
+          git config --global user.email "workflow@github.com"
+          git add examples || true
+          git commit -m "Update examples for ${{ matrix.id }}" || true
+          git push || true
+  
+  release:
+    needs: [ prepare, build ] # depend on the previous jobs...
+    if: "${{ !cancelled() }}" # ... but run even if (some of) them failed, but not if job was cancelled
+    runs-on: ubuntu-latest
+    steps:
+      - name: List current dir
+        run: |
+          ls -lahtR

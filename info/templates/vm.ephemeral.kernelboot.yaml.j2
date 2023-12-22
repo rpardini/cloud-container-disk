@@ -2,39 +2,41 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: fedora-39-arm64-kernelboot
+  name: {{ vm }} # {{  description }}
 spec:
   running: false # this defines the VM as stopped, you need to start it manually with virtctl
   template:
     metadata:
       labels:
-        kubevirt.io/vm: fedora-39-arm64-kernelboot
-        app.kubernetes.io/name: VM_fedora-39-arm64-kernelboot # For Hubble & others
+        kubevirt.io/vm: {{ vm }}
+        app.kubernetes.io/name: VM_{{ vm }} # For Hubble & others
     spec:
-      architecture: arm64
+      architecture: {{ arch.slug }}
       nodeSelector:
-        kubernetes.io/arch: arm64
+        kubernetes.io/arch: {{ arch.slug }}
 
       domain:
-        machine:
-          type: virt # virt is the only option for arm64
+        #machine:
+        #  type: virt # virt is the only option for arm64
+        # machine.type not specified, defaults to q35 on x86
+
         chassis:
           serial: pardini-chassis-serial
           asset: pardini-chassis-asset
           sku: pardini-chassis-sku
           version: pardini-chassis-version
           manufacturer: "pardini-chassis-manufacturer"
-        
+
         firmware:
           # kexec/DirectKernel/kernelBoot: boots kernel directly, no grub, cmdline is set here #
           kernelBoot:
             container:
               # note: version must match the modules which are in the rootfs containerDisk
-              image: ghcr.io/rpardini/fedora-cloud-kernel-kv:39-latest
+              image: {{ kernel.full_ref_latest }}
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
               imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
-            kernelArgs: root=LABEL=fedora ro rootflags=subvol=root no_timer_check net.ifnames=0 console=ttyAMA0 loglevel=7 direct-kernel-boot=yes
+            kernelArgs: {{ kernel_cmdline }}
         cpu:
           cores: 4
         devices:
@@ -69,13 +71,13 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
         - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
-            image: ghcr.io/rpardini/fedora-cloud-container-disk:39-latest
+            image: {{ disk.full_ref_latest }}
             imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
           name: containerdisk
 
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
             userData: |-
-              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/fedora_kubevirt_arm64
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/{{ slug }}_kubevirt_{{ arch.docker_slug }}
           name: cloudinitdisk
 
         - name: emptydisk # throwaway disk, for testing. does not persist.

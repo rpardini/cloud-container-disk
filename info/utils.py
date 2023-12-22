@@ -137,9 +137,9 @@ def setup_logging(name: string) -> logging.Logger:
 
 	# GHA hacks
 	if os.environ.get("GITHUB_ACTIONS", "") == "":
-		singleton_console = Console(color_system="standard", width=160, highlight=False)
+		singleton_console = Console(width=160)
 	else:
-		singleton_console = Console()
+		singleton_console = Console(color_system="standard", width=160, highlight=False)
 
 	logging.basicConfig(
 		level="DEBUG",

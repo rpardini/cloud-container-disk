@@ -13,6 +13,12 @@ log: logging.Logger = setup_logging("fedora")
 
 
 class Fedora(DistroBaseInfo):
+	def kernel_cmdline(self) -> list[string]:
+		return ["root=LABEL=fedora", "ro", "rootflags=subvol=root", "no_timer_check", "net.ifnames=0"]
+
+	def slug(self) -> string:
+		return f"fedora-{self.release}"
+
 	arches: list["FedoraArchInfo"]
 
 	# Read from environment var RELEASE, or use default.

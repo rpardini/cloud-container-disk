@@ -13,6 +13,12 @@ log: logging.Logger = setup_logging("rocky")
 
 
 class Rocky(DistroBaseInfo):
+	def slug(self) -> string:
+		return f"rocky-{self.ROCKY_RELEASE}"
+
+	def kernel_cmdline(self) -> list[string]:
+		return ["root=/dev/mapper/rocky-root", "rd.lvm.lv=rocky/root", "ro", "no_timer_check", "net.ifnames=0", "crashkernel=auto"]
+
 	arches: list["RockyArchInfo"]
 
 	# Read from environment var RELEASE, or use default.

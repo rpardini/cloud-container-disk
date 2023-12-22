@@ -4,6 +4,8 @@ import os
 import string
 from urllib.error import HTTPError
 
+import rich.repr
+
 from distro import DistroBaseInfo
 from distro_arch import DistroBaseArchInfo
 from utils import get_url_and_parse_html_hrefs
@@ -12,6 +14,7 @@ from utils import setup_logging
 log: logging.Logger = setup_logging("ubuntu")
 
 
+@rich.repr.auto
 class Ubuntu(DistroBaseInfo):
 	arches: list["UbuntuArchInfo"]
 
@@ -44,8 +47,16 @@ class Ubuntu(DistroBaseInfo):
 		self.oci_tag_version = self.release + "-" + self.version
 		self.oci_tag_latest = self.release + "-latest"
 
+	def slug(self) -> string:
+		return f"ubuntu-{self.release}"
 
+	def kernel_cmdline(self) -> list[string]:
+		return ["root=LABEL=cloudimg-rootfs", "ro"]
+
+
+@rich.repr.auto
 class UbuntuArchInfo(DistroBaseArchInfo):
+
 	distro: "Ubuntu"
 	index_url: string = None
 	all_hrefs: list[string]

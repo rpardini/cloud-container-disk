@@ -3,6 +3,7 @@ import logging
 import string
 from abc import abstractmethod
 
+import rich.repr
 from rich.syntax import Syntax
 
 from utils import global_console
@@ -18,6 +19,7 @@ log: logging.Logger = setup_logging("containerDisk")
 
 # @TODO: refactor, stop doing the same stuff twice for latest and versioned tags
 
+@rich.repr.auto
 class BaseOCISingleArchImage:
 	oci_ref: string
 	tag_version: string
@@ -31,7 +33,7 @@ class BaseOCISingleArchImage:
 		self.docker_arch = docker_arch
 
 	def build(self):
-		log.info(f"Building {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest}")
+		log.info(f"Building {self.full_ref_version} and {self.full_ref_latest}")
 		contents = self.dockerfile()
 
 		global_console().print(Syntax(contents, "dockerfile"))
@@ -48,15 +50,23 @@ class BaseOCISingleArchImage:
 			f.write(ignores)
 
 		# build the image
-		shell_passthrough(["docker", "build", "-t", f"{self.oci_ref}:{self.tag_version}", "."])
+		shell_passthrough(["docker", "build", "-t", f"{self.full_ref_version}", "."])
 
 		# tag the image as latest
-		shell_passthrough(["docker", "tag", f"{self.oci_ref}:{self.tag_version}", f"{self.oci_ref}:{self.tag_latest}"])
+		shell_passthrough(["docker", "tag", f"{self.full_ref_version}", f"{self.full_ref_latest}"])
+
+	@property
+	def full_ref_version(self):
+		return f"{self.oci_ref}:{self.tag_version}"
+
+	@property
+	def full_ref_latest(self):
+		return f"{self.oci_ref}:{self.tag_latest}"
 
 	def push(self):
 		# push the image & the latest tag
-		shell_passthrough(["docker", "push", f"{self.oci_ref}:{self.tag_version}"])
-		shell_passthrough(["docker", "push", f"{self.oci_ref}:{self.tag_latest}"])
+		shell_passthrough(["docker", "push", f"{self.full_ref_version}"])
+		shell_passthrough(["docker", "push", f"{self.full_ref_latest}"])
 
 	@abstractmethod
 	def dockerfile(self):
@@ -67,6 +77,7 @@ class BaseOCISingleArchImage:
 		pass
 
 
+@rich.repr.auto
 class ArchContainerKernelImage(BaseOCISingleArchImage):
 	def dockerignore(self):
 		return f"""*
@@ -90,6 +101,7 @@ LABEL org.opencontainers.image.description="Cloud image kernel and initrd image 
 """
 
 
+@rich.repr.auto
 class ArchContainerDiskImage(BaseOCISingleArchImage):
 	qcow2_filename: string
 
@@ -123,6 +135,14 @@ class MultiArchImage:
 		self.tag_latest = tag_latest
 		self.arch_images = {}
 
+	@property
+	def full_ref_version(self):
+		return f"{self.oci_ref}:{self.tag_version}"
+
+	@property
+	def full_ref_latest(self):
+		return f"{self.oci_ref}:{self.tag_latest}"
+
 	def create_disk_image(self, arch: string, qcow2_filename: string):
 		self.arch_images[arch] = ArchContainerDiskImage(
 			self.oci_ref, self.tag_version, self.tag_latest, arch,
@@ -134,48 +154,48 @@ class MultiArchImage:
 			kernel_filename, initramfs_filename)
 
 	def build(self):
-		log.info(f"Building ({self.type}): {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest}")
+		log.info(f"Building ({self.type}): {self.full_ref_version} and {self.full_ref_latest}")
 		for arch, arch_image in self.arch_images.items():
 			log.info(
-				f"Building ({self.type}): {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest} for {arch}")
+				f"Building ({self.type}): {self.full_ref_version} and {self.full_ref_latest} for {arch}")
 			arch_image.build()
 
 	def push(self):
-		log.info(f"Pushing ({self.type}): {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest}")
+		log.info(f"Pushing ({self.type}): {self.full_ref_version} and {self.full_ref_latest}")
 		for arch, arch_image in self.arch_images.items():
 			log.info(
-				f"Pushing ({self.type}): {self.oci_ref}:{self.tag_version} and {self.oci_ref}:{self.tag_latest} for {arch}")
+				f"Pushing ({self.type}): {self.full_ref_version} and {self.full_ref_latest} for {arch}")
 			arch_image.push()
 
 		# Create the manifest for the versioned tag
-		log.info(f"Creating manifest for {self.oci_ref}:{self.tag_version}")
+		log.info(f"Creating manifest for {self.full_ref_version}")
 		shell(
-			["docker", "manifest", "create", "--amend", f"{self.oci_ref}:{self.tag_version}"] + [
-				f"{self.oci_ref}:{self.tag_version}-{arch}" for arch in self.arch_images.keys()])
+			["docker", "manifest", "create", "--amend", f"{self.full_ref_version}"] + [
+				f"{self.full_ref_version}-{arch}" for arch in self.arch_images.keys()])
 
 		for arch, arch_image in self.arch_images.items():
-			log.info(f"Annotating {self.oci_ref}:{self.tag_version}-{arch} as {arch}")
+			log.info(f"Annotating {self.full_ref_version}-{arch} as {arch}")
 			shell_passthrough(
-				["docker", "manifest", "annotate", f"{self.oci_ref}:{self.tag_version}",
-				 f"{self.oci_ref}:{self.tag_version}-{arch}", "--arch", arch])
+				["docker", "manifest", "annotate", f"{self.full_ref_version}",
+				 f"{self.full_ref_version}-{arch}", "--arch", arch])
 
 		# Create the manifest for the latest tag
-		log.info(f"Creating manifest for {self.oci_ref}:{self.tag_latest}")
+		log.info(f"Creating manifest for {self.full_ref_latest}")
 		shell_passthrough(
-			["docker", "manifest", "create", "--amend", f"{self.oci_ref}:{self.tag_latest}"] +
-			[f"{self.oci_ref}:{self.tag_latest}-{arch}" for arch in self.arch_images.keys()]
+			["docker", "manifest", "create", "--amend", f"{self.full_ref_latest}"] +
+			[f"{self.full_ref_latest}-{arch}" for arch in self.arch_images.keys()]
 		)
 
 		for arch, arch_image in self.arch_images.items():
-			log.info(f"Annotating {self.oci_ref}:{self.tag_latest}-{arch} as {arch}")
+			log.info(f"Annotating {self.full_ref_latest}-{arch} as {arch}")
 			shell_passthrough([
-				"docker", "manifest", "annotate", f"{self.oci_ref}:{self.tag_latest}",
-				f"{self.oci_ref}:{self.tag_latest}-{arch}", "--arch", arch])
+				"docker", "manifest", "annotate", f"{self.full_ref_latest}",
+				f"{self.full_ref_latest}-{arch}", "--arch", arch])
 
 		# push the manifest for the versioned tag
-		log.info(f"Pushing manifest for {self.oci_ref}:{self.tag_version}")
-		shell_passthrough(["docker", "manifest", "push", f"{self.oci_ref}:{self.tag_version}"])
+		log.info(f"Pushing manifest for {self.full_ref_version}")
+		shell_passthrough(["docker", "manifest", "push", f"{self.full_ref_version}"])
 
 		# push the manifest for the latest tag
-		log.info(f"Pushing manifest for {self.oci_ref}:{self.tag_latest}")
-		shell_passthrough(["docker", "manifest", "push", f"{self.oci_ref}:{self.tag_latest}"])
+		log.info(f"Pushing manifest for {self.full_ref_latest}")
+		shell_passthrough(["docker", "manifest", "push", f"{self.full_ref_latest}"])

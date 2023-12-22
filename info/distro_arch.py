@@ -18,8 +18,8 @@ class DistroBaseArchInfo:
 	docker_slug: string
 	slug: string
 	version: string = None
-	qcow2_url: string = None 
-	qcow2_filename: string = None # filename on disk
+	qcow2_url: string = None
+	qcow2_filename: string = None  # filename on disk
 	vmlinuz_final_filename: string = None
 	initramfs_final_filename: string = None
 
@@ -64,3 +64,10 @@ class DistroBaseArchInfo:
 				initramfs_filename = mp.glob_non_rescue(initramfs_glob)
 				log.info(f"initramfs_filename: {initramfs_filename}")
 				shell(["cp", "-v", f"{mp.mountpoint}/{initramfs_filename}", f"{self.initramfs_final_filename}"])
+
+	def kernel_cmdline(self) -> list[string]:
+		if self.docker_slug == "arm64":
+			return ["console=ttyAMA0"]
+		if self.docker_slug == "amd64":
+			return ["console=ttyS0"]
+		raise Exception(f"Unknown docker_slug: {self.docker_slug}")
