@@ -11,22 +11,18 @@ spec:
         kubevirt.io/vm: fedora-39-arm64-kernelboot-ephemeral
         app.kubernetes.io/name: VM_fedora-39-arm64-kernelboot-ephemeral # For Hubble & others
     spec:
-      architecture: aarch64
+      architecture: arm64
       nodeSelector:
-        kubernetes.io/arch: aarch64
-
+        kubernetes.io/arch: arm64
       domain:
-        #machine:
-        #  type: virt # virt is the only option for arm64
-        # machine.type not specified, defaults to q35 on x86
-
+        machine:
+          type: virt # for arm64
         chassis:
           serial: pardini-chassis-serial
           asset: pardini-chassis-asset
           sku: pardini-chassis-sku
           version: pardini-chassis-version
           manufacturer: "pardini-chassis-manufacturer"
-
         firmware:
           # kexec/DirectKernel/kernelBoot: boots kernel directly, no grub, cmdline is set here #
           kernelBoot:
@@ -36,7 +32,7 @@ spec:
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
               imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
-            kernelArgs: root=LABEL=fedora ro rootflags=subvol=root no_timer_check net.ifnames=0 console=ttyAMA0 loglevel=7 direct-kernel-boot=yes
+            kernelArgs: root=LABEL=fedora ro rootflags=subvol=root no_timer_check net.ifnames=0 console=ttyAMA0 consoleblank=0 loglevel=7 direct-kernel-boot=yes
         cpu:
           cores: 4
         devices:
@@ -54,14 +50,10 @@ spec:
               serial: emptydiskserial
               disk:
                 bus: virtio
-            #- disk:
-            #    bus: virtio
-            #  name: host-disk
-            #  serial: host-disk-serial
           interfaces:
             - masquerade: { }
               name: default
-          rng: { } # source of randomness
+          rng: { } 
         resources:
           requests:
             memory: 4G
@@ -74,18 +66,10 @@ spec:
             image: ghcr.io/rpardini/fedora-cloud-container-disk:39-latest
             imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
           name: containerdisk
-
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
             userData: |-
               #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/fedora-39_kubevirt_arm64
           name: cloudinitdisk
-
-        - name: emptydisk # throwaway disk, for testing. does not persist.
+        - name: emptydisk # throwaway disk, does not persist.
           emptyDisk:
             capacity: 2Gi
-
-        #- hostDisk: # persistent disk, using a file directly on the k8s host running this VM. Similar to hostPath, but with a .img wrapper.
-        #    capacity: 3Gi
-        #    path: /var/lib/opensearch/kubevirt-hostdisk-fedora.img
-        #    type: DiskOrCreate
-        #  name: host-disk
