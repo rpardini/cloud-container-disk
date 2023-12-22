@@ -1,0 +1,91 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: ubuntu-noble-arm64-kernelboot-ephemeral # Kernel boot, can control kernel cmdline, ephemeral ESP/rootfs disk
+spec:
+  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: ubuntu-noble-arm64-kernelboot-ephemeral
+        app.kubernetes.io/name: VM_ubuntu-noble-arm64-kernelboot-ephemeral # For Hubble & others
+    spec:
+      architecture: arm64
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+      domain:
+        #machine:
+        #  type: virt # virt is the only option for arm64
+        # machine.type not specified, defaults to q35 on x86
+
+        chassis:
+          serial: pardini-chassis-serial
+          asset: pardini-chassis-asset
+          sku: pardini-chassis-sku
+          version: pardini-chassis-version
+          manufacturer: "pardini-chassis-manufacturer"
+
+        firmware:
+          # kexec/DirectKernel/kernelBoot: boots kernel directly, no grub, cmdline is set here #
+          kernelBoot:
+            container:
+              # note: version must match the modules which are in the rootfs containerDisk
+              image: ghcr.io/rpardini/ubuntu-cloud-kernel-kv:noble-latest
+              initrdPath: /boot/initrd
+              kernelPath: /boot/vmlinuz
+              imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
+            kernelArgs: root=LABEL=cloudimg-rootfs ro console=ttyAMA0 loglevel=7 direct-kernel-boot=yes
+        cpu:
+          cores: 4
+        devices:
+          autoattachGraphicsDevice: false # no graphics, thanks
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+              serial: containerdiskserial
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+              serial: cloudinitdiskserial
+            - name: emptydisk
+              serial: emptydiskserial
+              disk:
+                bus: virtio
+            #- disk:
+            #    bus: virtio
+            #  name: host-disk
+            #  serial: host-disk-serial
+          interfaces:
+            - masquerade: { }
+              name: default
+          rng: { } # source of randomness
+        resources:
+          requests:
+            memory: 4G
+      networks:
+        - name: default
+          pod: { }
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
+            image: ghcr.io/rpardini/ubuntu-cloud-container-disk:noble-latest
+            imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
+          name: containerdisk
+
+        - cloudInitNoCloud: # auto create .ISOs for us, thanks.
+            userData: |-
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/ubuntu-noble_kubevirt_arm64
+          name: cloudinitdisk
+
+        - name: emptydisk # throwaway disk, for testing. does not persist.
+          emptyDisk:
+            capacity: 2Gi
+
+        #- hostDisk: # persistent disk, using a file directly on the k8s host running this VM. Similar to hostPath, but with a .img wrapper.
+        #    capacity: 3Gi
+        #    path: /var/lib/opensearch/kubevirt-hostdisk-fedora.img
+        #    type: DiskOrCreate
+        #  name: host-disk
