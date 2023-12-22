@@ -173,7 +173,7 @@ class DistroBaseInfo:
 			}
 		]
 
-		standard_args = ["loglevel=7", "direct-kernel-boot=yes"]
+		standard_args = ["consoleblank=0", "loglevel=7", "direct-kernel-boot=yes"]
 
 		for ex in examples:
 			example = ex["name"]

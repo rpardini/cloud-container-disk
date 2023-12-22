@@ -17,7 +17,7 @@ class Debian(DistroBaseInfo):
 		return f"debian-{self.release}"
 
 	def kernel_cmdline(self) -> list[string]:
-		return ["root=LABEL=cloudimg-rootfs", "ro"]
+		return ["root=/dev/vda1", "ro"]  # bad, but Debian does not label either the partition or the filesystem, so we've to hardcode it
 
 	arches: list["DebianArchInfo"]
 

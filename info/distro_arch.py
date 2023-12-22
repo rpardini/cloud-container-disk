@@ -71,9 +71,9 @@ class DistroBaseArchInfo:
 
 	def kernel_cmdline(self) -> list[string]:
 		if self.docker_slug == "arm64":
-			return ["console=ttyAMA0"]
+			return ["console=ttyAMA0", "earlyprintk=ttyAMA0"]
 		if self.docker_slug == "amd64":
-			return ["console=ttyS0"]
+			return ["console=ttyS0", "earlyprintk=ttyS0"]
 		raise Exception(f"Unknown docker_slug: {self.docker_slug}")
 
 	def boot_partition_num(self):

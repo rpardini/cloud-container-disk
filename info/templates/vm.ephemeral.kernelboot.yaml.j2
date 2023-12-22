@@ -11,9 +11,9 @@ spec:
         kubevirt.io/vm: {{ vm }}
         app.kubernetes.io/name: VM_{{ vm }} # For Hubble & others
     spec:
-      architecture: {{ arch.slug }}
+      architecture: {{ arch.docker_slug }}
       nodeSelector:
-        kubernetes.io/arch: {{ arch.slug }}
+        kubernetes.io/arch: {{ arch.docker_slug }}
 
       domain:
         #machine:
