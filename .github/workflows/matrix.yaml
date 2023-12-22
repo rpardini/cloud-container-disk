@@ -18,6 +18,9 @@ jobs:
       created: ${{ steps.prep.outputs.created }} # refer to as ${{needs.prepare.outputs.created}}
 
   build:
+    permissions:
+      packages: write
+          
     needs: [ prepare ]
     runs-on: "ubuntu-latest" # ${{ matrix.arch.runner }}
     strategy:
@@ -86,7 +89,7 @@ jobs:
         id: magic
         env: ${{ matrix.env }}
         run: |
-          sudo --preserve-env python3 info/cli.py ${{ matrix.distro }} || true
+          sudo --preserve-env python3 info/cli.py ${{ matrix.distro }}
           sudo --preserve-env chown -R $USER:$USER . || true
 
       - name: Commit changes to the examples directory
