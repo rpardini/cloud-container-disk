@@ -71,7 +71,7 @@ class DistroBaseArchInfo:
 
 	def kernel_cmdline(self) -> list[string]:
 		if self.docker_slug == "arm64":
-			return ["console=ttyAMA0", "earlyprintk=ttyAMA0"]
+			return ["console=ttyAMA0"]
 		if self.docker_slug == "amd64":
 			return ["console=ttyS0", "earlyprintk=ttyS0"]
 		raise Exception(f"Unknown docker_slug: {self.docker_slug}")
@@ -85,3 +85,11 @@ class DistroBaseArchInfo:
 		log.info("Using default arch boot_dir_prefix, delegating to distro...")
 		# noinspection PyUnresolvedReferences
 		return self.distro.boot_dir_prefix()
+
+	@property
+	def qemu_machine_type(self):
+		if self.docker_slug == "arm64":
+			return "virt"
+		if self.docker_slug == "amd64":
+			return "q35"
+		raise Exception(f"Unknown docker_slug: {self.docker_slug}")
