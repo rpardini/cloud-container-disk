@@ -11,7 +11,6 @@ from rich.pretty import pretty_repr
 from containerdisk import MultiArchImage
 from distro_arch import DistroBaseArchInfo
 from utils import setup_logging
-from utils import singleton_console
 
 log: logging.Logger = setup_logging("distro")
 
@@ -176,9 +175,10 @@ class DistroBaseInfo:
 					disk=self.oci_images_by_type["disk"],
 					kernel_cmdline=(" ".join(self.kernel_cmdline() + arch.kernel_cmdline() + standard_args)),
 				)
+
 				# print the rendered template using rich.syntax
-				from rich.syntax import Syntax
-				singleton_console.print(Syntax(rendered_template, "yaml", line_numbers=True))
+				# from rich.syntax import Syntax
+				# singleton_console.print(Syntax(rendered_template, "yaml", line_numbers=True))
 
 				# save the rendered template
 				with open(output_filename_yaml, "w") as f:

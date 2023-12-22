@@ -73,8 +73,7 @@ jobs:
             *.aarch64.qcow2
             *.arm64.qcow2
           key: aarch64-${{matrix.id}}-qcow2
-          restore-keys: |
-            aarch64-${{matrix.id}}-qcow2
+          restore-keys: aarch64-${{matrix.id}}-qcow2
 
       - name: Cache qcow2 x86_64 - ${{matrix.id}}
         uses: actions/cache@v3
