@@ -40,17 +40,14 @@ class Debian(DistroBaseInfo):
 			default_oci_ref_kernel="debian-cloud-kernel-kv"
 		)
 
-	def handle_extract_kernel_initrd(self, arch, nbd_counter):
-		log.warning("Debian has a single partition qcow2, so we need to extract from partition 1, not 2.")
-		arch.extract_kernel_initrd_from_qcow2(
-			nbd_counter, partition_num=1,
-			vmlinuz_glob="boot/vmlinuz-*", initramfs_glob="boot/initrd.img-*"
-		)
-
 	def set_version_from_arch_versions(self, arch_versions: set[string]) -> string:
 		self.version = "-".join(arch_versions)  # just join all distinct versions, hopefully there is only one
 		self.oci_tag_version = self.release + "-" + self.version
 		self.oci_tag_latest = self.release + "-latest"
+
+	def boot_partition_num(self) -> int:
+		log.info("Debian's default boot partition number is 2, but we need different")
+		return 1
 
 
 class DebianArchInfo(DistroBaseArchInfo):

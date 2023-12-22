@@ -10,6 +10,7 @@ from rich.pretty import pretty_repr
 
 from containerdisk import MultiArchImage
 from distro_arch import DistroBaseArchInfo
+from utils import set_gha_output
 from utils import setup_logging
 
 log: logging.Logger = setup_logging("distro")
@@ -46,6 +47,14 @@ class DistroBaseInfo:
 	@abstractmethod
 	def kernel_cmdline(self) -> list[string]:
 		raise NotImplementedError
+
+	def boot_partition_num(self) -> int:
+		log.info("Using default boot partition number: 2")
+		return 2
+
+	def boot_dir_prefix(self) -> string:
+		log.info("Using default boot directory prefix: (none)")
+		return ""
 
 	def prepare_version(self) -> string:
 		version_set: set[string] = set()
@@ -119,6 +128,12 @@ class DistroBaseInfo:
 		for oci_image in self.oci_images:
 			self.oci_images_by_type[oci_image.type] = oci_image
 
+		# @TODO: check if versioned images already exist; if so, do nothing -- no use in rebuilding
+
+		# output GHA outputs with the qcow2 filenames, for GHA caching steps
+		for arch in self.arches:
+			set_gha_output(f"qcow2-{arch.docker_slug}", arch.qcow2_filename)
+
 		self.template_example()
 
 		# If running on Darwin, log and return. We need Linux to run qemu-nbd.
@@ -126,14 +141,18 @@ class DistroBaseInfo:
 			log.warning("Not on Linux, cannot run qemu-nbd to extract kernel and initrd from qcow2.")
 			return
 
-		self.download_qcow2()
-		self.extract_kernel_initrd()
+		if os.environ.get("DO_DOWNLOAD_QCOW2", "") == "yes":
+			self.download_qcow2()
+		if os.environ.get("DO_EXTRACT_KERNEL", "") == "yes":
+			self.extract_kernel_initrd()
 
 		for oci_image in self.oci_images:
 			log.info("oci_image: %s", oci_image)
 			pprint(oci_image)
-			oci_image.build()
-			oci_image.push()
+			if os.environ.get("DO_DOCKER_BUILD", "") == "yes":
+				oci_image.build()
+			if os.environ.get("DO_DOCKER_PUSH", "") == "yes":
+				oci_image.push()
 			log.info("--------------------------------------------------------------------------------------------")
 
 		log.info("Done.")

@@ -35,13 +35,6 @@ class Ubuntu(DistroBaseInfo):
 			default_oci_ref_kernel="ubuntu-cloud-kernel-kv"
 		)
 
-	def handle_extract_kernel_initrd(self, arch, nbd_counter):
-		log.warning("Ubuntu has a single partition qcow2, so we need to extract from partition 1, not 2.")
-		arch.extract_kernel_initrd_from_qcow2(
-			nbd_counter, partition_num=1,
-			vmlinuz_glob="boot/vmlinuz-*", initramfs_glob="boot/initrd.img-*"
-		)
-
 	def set_version_from_arch_versions(self, arch_versions: set[string]) -> string:
 		self.version = "-".join(arch_versions)  # just join all distinct versions, hopefully there is only one
 		self.oci_tag_version = self.release + "-" + self.version
@@ -53,10 +46,23 @@ class Ubuntu(DistroBaseInfo):
 	def kernel_cmdline(self) -> list[string]:
 		return ["root=LABEL=cloudimg-rootfs", "ro"]
 
+	def boot_partition_num(self) -> int:
+		if self.release == "noble":  # noble has separate boot partition
+			log.info(f"Ubuntu {self.release} uses separate bootfs at partition 16.")
+			return 16
+		log.info(f"Ubuntu {self.release} uses rootfs booting at partition 1.")
+		return 1
+
+	def boot_dir_prefix(self) -> string:
+		if self.release == "noble":  # noble has separate boot partition
+			log.info(f"Ubuntu {self.release} uses separate bootfs at partition 16 and kernel at its root.")
+			return ""
+		log.info(f"Ubuntu {self.release} uses rootfs booting at partition 1 and kernel in boot/ directory")
+		return "boot/"
+
 
 @rich.repr.auto
 class UbuntuArchInfo(DistroBaseArchInfo):
-
 	distro: "Ubuntu"
 	index_url: string = None
 	all_hrefs: list[string]

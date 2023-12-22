@@ -49,19 +49,23 @@ class DistroBaseArchInfo:
 			log.info(f"Skipping download, {self.qcow2_filename} already exists")
 
 	def extract_kernel_initrd_from_qcow2(
-			self, nbd_counter, vmlinuz_glob="vmlinuz-*", initramfs_glob="initramfs-*", partition_num=2):
+			self, nbd_counter, vmlinuz_glob=None, initramfs_glob=None):
+		if initramfs_glob is None:
+			initramfs_glob = ["initramfs-*", "initrd.img-*"]
+		if vmlinuz_glob is None:
+			vmlinuz_glob = ["vmlinuz-*"]
 		if os.path.exists(self.vmlinuz_final_filename) and os.path.exists(self.initramfs_final_filename):
 			log.info(
 				f"Skipping extraction, {self.vmlinuz_final_filename} and {self.initramfs_final_filename} already exist")
 			return
 
 		with NBDImageMounter(nbd_counter, self.qcow2_filename) as nbd:
-			with DevicePathMounter(nbd.nbd_device, partition_num, f"mnt-{self.qcow2_filename}") as mp:
-				vmlinuz_filename = mp.glob_non_rescue(vmlinuz_glob)
+			with DevicePathMounter(nbd.nbd_device, self.boot_partition_num(), f"mnt-{self.qcow2_filename}") as mp:
+				vmlinuz_filename = mp.glob_non_rescue(self.boot_dir_prefix(), vmlinuz_glob)
 				log.info(f"vmlinuz_filename: {vmlinuz_filename}")
 				shell(["cp", "-v", f"{mp.mountpoint}/{vmlinuz_filename}", f"{self.vmlinuz_final_filename}"])
 
-				initramfs_filename = mp.glob_non_rescue(initramfs_glob)
+				initramfs_filename = mp.glob_non_rescue(self.boot_dir_prefix(), initramfs_glob)
 				log.info(f"initramfs_filename: {initramfs_filename}")
 				shell(["cp", "-v", f"{mp.mountpoint}/{initramfs_filename}", f"{self.initramfs_final_filename}"])
 
@@ -71,3 +75,13 @@ class DistroBaseArchInfo:
 		if self.docker_slug == "amd64":
 			return ["console=ttyS0"]
 		raise Exception(f"Unknown docker_slug: {self.docker_slug}")
+
+	def boot_partition_num(self):
+		log.info("Using default arch boot_partition_num, delegating to distro...")
+		# noinspection PyUnresolvedReferences
+		return self.distro.boot_partition_num()
+
+	def boot_dir_prefix(self):
+		log.info("Using default arch boot_dir_prefix, delegating to distro...")
+		# noinspection PyUnresolvedReferences
+		return self.distro.boot_dir_prefix()

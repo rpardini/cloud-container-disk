@@ -58,39 +58,19 @@ jobs:
       - name: setup python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-          #cache: 'pip' # caching pip dependencies
+          python-version: "3.11"
+          #cache: 'pip' # caching pip dependencies -- not useful, we're using venv
 
       - name: install pip deps
         run: |
-          sudo --preserve-env python3 -m pip install --upgrade pip
-          sudo --preserve-env python3 -m pip install -r requirements.txt
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements.txt
 
-      - name: Cache qcow2 aarch64 - ${{matrix.id}}
-        uses: actions/cache@v3
-        with:
-          path: |
-            *.aarch64.qcow2
-            *.arm64.qcow2
-          key: aarch64-${{matrix.id}}-qcow2
-          restore-keys: aarch64-${{matrix.id}}-qcow2
-
-      - name: Cache qcow2 x86_64 - ${{matrix.id}}
-        uses: actions/cache@v3
-        with:
-          path: |
-            *.x86_64.qcow2
-            *.amd64.qcow2
-          key: x86_64-${{matrix.id}}-qcow2
-          restore-keys: |
-            x86_64-${{matrix.id}}-qcow2
-
-      - name: Run magic script for ${{matrix.id}}
-        id: magic
+      - name: Obtain info and template examples ${{matrix.id}}
+        id: info
         env: ${{ matrix.env }}
         run: |
-          sudo --preserve-env python3 info/cli.py ${{ matrix.distro }}
-          sudo --preserve-env chown -R $USER:$USER . || true
+          .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Commit changes to the examples directory
         if: ${{ github.repository_owner == 'rpardini' }}
@@ -101,7 +81,33 @@ jobs:
           git add examples || true
           git commit -m "Update examples for ${{ matrix.id }}" || true
           git push || true
-  
+      
+      # Two separate caching steps, since 2 qcow2 are too big to be cached together
+      - name: Cache qcow2 arm64 - ${{ steps.info.outputs.qcow2-arm64 }}
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.info.outputs.qcow2-arm64 }}
+          key: ${{ steps.info.outputs.qcow2-arm64 }}
+          restore-keys: ${{ steps.info.outputs.qcow2-arm64 }}
+
+      - name: Cache qcow2 amd64 - ${{ steps.info.outputs.qcow2-amd64 }}
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.info.outputs.qcow2-amd64 }}
+          key: ${{ steps.info.outputs.qcow2-amd64 }}
+          restore-keys: ${{ steps.info.outputs.qcow2-amd64 }}
+
+      - name: Actually process ${{matrix.id}}
+        id: magic
+        env: ${{ matrix.env }}
+        run: |
+          DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
+            sudo --preserve-env .venv/bin/python info/cli.py ${{ matrix.distro }}
+
+      - name: Fix permissions after sudo'ed run
+        run: |
+          sudo --preserve-env chown -R $USER:$USER . || true
+
   release:
     needs: [ prepare, build ] # depend on the previous jobs...
     if: "${{ !cancelled() }}" # ... but run even if (some of) them failed, but not if job was cancelled

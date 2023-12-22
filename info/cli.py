@@ -24,18 +24,24 @@ def cli():
 	'--rocky-vault-mirror', envvar="ROCKY_VAULT_MIRROR", default="https://dl.rockylinux.org/vault/rocky",
 	help='Rocky Linux vault mirror, can be https://rocky-linux-europe-west4.production.gcp.mirrors.ctrliq.cloud/pub/rocky')
 def rocky(release, variant, rocky_mirror, rocky_vault_mirror):
-	log.info('Rocky')
-	r = Rocky(release, variant, rocky_mirror, rocky_vault_mirror)
-	r.cli_the_whole_shebang()
+	try:
+		log.info('Rocky')
+		r = Rocky(release, variant, rocky_mirror, rocky_vault_mirror)
+		r.cli_the_whole_shebang()
+	except:
+		log.warning("CLI failed")
 
 
 @cli.command(help="Fedora Cloud images, extracts kernel and initrd from qcow2")
 @click.option('--release', envvar="RELEASE", default="39", help='Fedora release; can be 39 etc')
 @click.option('--mirror', envvar="FEDORA_MIRROR", default="https://download.fedoraproject.org/pub/fedora", help='Fedora mirror')
 def fedora(release, mirror):
-	log.info('Fedora')
-	f = Fedora(release, mirror)
-	f.cli_the_whole_shebang()
+	try:
+		log.info('Fedora')
+		f = Fedora(release, mirror)
+		f.cli_the_whole_shebang()
+	except:
+		log.warning("CLI failed")
 
 
 @cli.command(help="Debian Cloud images, extracts kernel and initrd from qcow2")
@@ -44,18 +50,24 @@ def fedora(release, mirror):
 @click.option('--variant', envvar="VARIANT", default="generic", help='Debian Cloud Linux variant; can be genericcloud, generic, or nocloud')
 @click.option('--mirror', envvar="DEBIAN_MIRROR", default="https://cloud.debian.org/images/cloud", help='Debian mirror')
 def debian(release, variant, mirror):
-	log.info('Debian')
-	d = Debian(release, variant, mirror)
-	d.cli_the_whole_shebang()
+	try:
+		log.info('Debian')
+		d = Debian(release, variant, mirror)
+		d.cli_the_whole_shebang()
+	except:
+		log.warning("CLI failed")
 
 
 @cli.command(help="Ubuntu Cloud images, extracts kernel and initrd from qcow2")
 @click.option('--release', envvar="RELEASE", default="bookworm", help='Ubuntu release; can be bullseye/bookworm/trixie etc')
 @click.option('--mirror', envvar="UBUNTU_MIRROR", default="https://cloud-images.ubuntu.com", help='Ubuntu mirror')
 def ubuntu(release, mirror):
-	log.info('Ubuntu')
-	d = Ubuntu(release, mirror)
-	d.cli_the_whole_shebang()
+	try:
+		log.info('Ubuntu')
+		d = Ubuntu(release, mirror)
+		d.cli_the_whole_shebang()
+	except:
+		log.warning("CLI failed")
 
 
 if __name__ == '__main__':

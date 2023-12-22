@@ -16,6 +16,18 @@ log = logging.getLogger("utils")
 singleton_console: Console | None = None
 
 
+def set_gha_output(name, value):
+	if os.environ.get('GITHUB_OUTPUT') is None:
+		log.debug(f"Environment variable GITHUB_OUTPUT is not set. Cannot set output '{name}' to '{value}'")
+		return
+
+	with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+		print(f'{name}={value}', file=fh)
+
+	length = len(f"{value}")
+	log.info(f"Set GHA output '{name}' to ({length} bytes) '{value}'")
+
+
 def shell(arg_list: list[string]):
 	# execute a shell command, passing the shell-escaped arg list; throw and exception if the exit code is not 0
 	log.info(f"shell: {arg_list}")
@@ -89,14 +101,17 @@ class DevicePathMounter:
 		log.info(f"Removing {self.mountpoint}")
 		shell(["rmdir", f"{self.mountpoint}"])
 
-	def glob_non_rescue(self, glob_pattern):
-		all_globs = glob.glob(glob_pattern, root_dir=f"{self.mountpoint}")
+	def glob_non_rescue(self, prefix, glob_pattern: list[str]):
+		all_globs = []
+		for pattern in glob_pattern:
+			all_globs += glob.glob(prefix + pattern, root_dir=f"{self.mountpoint}")
 		log.info(f"all_globs: {all_globs}")
 		all_globs = [vmlinuz for vmlinuz in all_globs if "-rescue" not in vmlinuz]
 
 		if len(all_globs) != 1:
 			if len(all_globs) == 0:
 				log.error(f"Found no '{glob_pattern}' files in {self.mountpoint}")
+			shell_passthrough(["ls", "-lah", f"{self.mountpoint}{prefix}"])
 			raise Exception(f"Found {len(all_globs)} '{glob_pattern}' files in {self.mountpoint}: {all_globs}")
 
 		result = all_globs[0]
