@@ -1,4 +1,5 @@
 import logging
+import sys
 
 import click
 
@@ -31,6 +32,7 @@ def rocky(release, variant, rocky_mirror, rocky_vault_mirror):
 		r.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")
+		sys.exit(1)
 
 
 @cli.command(help="Fedora Cloud images, extracts kernel and initrd from qcow2")
@@ -43,6 +45,7 @@ def fedora(release, mirror):
 		f.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")
+		sys.exit(1)
 
 
 @cli.command(help="Debian Cloud images, extracts kernel and initrd from qcow2")
@@ -57,6 +60,7 @@ def debian(release, variant, mirror):
 		d.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")
+		sys.exit(1)
 
 
 @cli.command(help="Ubuntu Cloud images, extracts kernel and initrd from qcow2")
@@ -69,6 +73,7 @@ def ubuntu(release, mirror):
 		d.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")
+		sys.exit(1)
 
 
 @cli.command(help="Armbian Cloud images, extracts kernel and initrd from qcow2")
@@ -84,6 +89,7 @@ def armbian(release, branch):
 		d.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")
+		sys.exit(1)
 
 
 if __name__ == '__main__':
