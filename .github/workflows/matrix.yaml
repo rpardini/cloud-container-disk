@@ -19,8 +19,9 @@ jobs:
 
   build:
     permissions:
-      packages: write
-          
+      packages: write # to write to ghcr.io
+      contents: write # to commit to the repo (examples)
+    
     needs: [ prepare ]
     runs-on: "ubuntu-latest" # ${{ matrix.arch.runner }}
     strategy:
@@ -36,7 +37,7 @@ jobs:
           - { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
     env:
       BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
-      ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
+      #ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
     steps:
 
       - name: Checkout build repo
@@ -55,7 +56,7 @@ jobs:
           sudo modprobe nbd max_part=8
 
       - name: setup python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           #cache: 'pip' # caching pip dependencies
@@ -66,7 +67,7 @@ jobs:
           sudo --preserve-env python3 -m pip install -r requirements.txt
 
       - name: Cache qcow2 aarch64 - ${{matrix.id}}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             *.aarch64.qcow2
@@ -76,7 +77,7 @@ jobs:
             aarch64-${{matrix.id}}-qcow2
 
       - name: Cache qcow2 x86_64 - ${{matrix.id}}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             *.x86_64.qcow2
@@ -97,6 +98,7 @@ jobs:
         run: |
           git config --global user.name "GHA workflow"
           git config --global user.email "workflow@github.com"
+          git pull || true # repo might have changed since we started, avoid conflicts
           git add examples || true
           git commit -m "Update examples for ${{ matrix.id }}" || true
           git push || true
