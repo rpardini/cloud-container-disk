@@ -11,9 +11,9 @@ spec:
         kubevirt.io/vm: rocky-9-amd64-kernelboot-ephemeral
         app.kubernetes.io/name: VM_rocky-9-amd64-kernelboot-ephemeral # For Hubble & others
     spec:
-      architecture: x86_64
+      architecture: amd64
       nodeSelector:
-        kubernetes.io/arch: x86_64
+        kubernetes.io/arch: amd64
 
       domain:
         #machine:
@@ -36,7 +36,7 @@ spec:
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
               imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
-            kernelArgs: root=/dev/mapper/rocky-root rd.lvm.lv=rocky/root ro no_timer_check net.ifnames=0 crashkernel=auto console=ttyS0 loglevel=7 direct-kernel-boot=yes
+            kernelArgs: root=/dev/mapper/rocky-root rd.lvm.lv=rocky/root ro no_timer_check net.ifnames=0 crashkernel=auto console=ttyS0 earlyprintk=ttyS0 consoleblank=0 loglevel=7 direct-kernel-boot=yes
         cpu:
           cores: 4
         devices:
