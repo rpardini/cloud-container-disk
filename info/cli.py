@@ -2,13 +2,14 @@ import logging
 
 import click
 
+from armbian import Armbian
 from debian import Debian
 from fedora import Fedora
 from rocky import Rocky
 from ubuntu import Ubuntu
 from utils import setup_logging
 
-log: logging.Logger = setup_logging("rocky")
+log: logging.Logger = setup_logging("cli")
 
 
 @click.group()
@@ -29,7 +30,7 @@ def rocky(release, variant, rocky_mirror, rocky_vault_mirror):
 		r = Rocky(release, variant, rocky_mirror, rocky_vault_mirror)
 		r.cli_the_whole_shebang()
 	except:
-		log.warning("CLI failed")
+		log.exception("CLI failed")
 
 
 @cli.command(help="Fedora Cloud images, extracts kernel and initrd from qcow2")
@@ -41,7 +42,7 @@ def fedora(release, mirror):
 		f = Fedora(release, mirror)
 		f.cli_the_whole_shebang()
 	except:
-		log.warning("CLI failed")
+		log.exception("CLI failed")
 
 
 @cli.command(help="Debian Cloud images, extracts kernel and initrd from qcow2")
@@ -55,7 +56,7 @@ def debian(release, variant, mirror):
 		d = Debian(release, variant, mirror)
 		d.cli_the_whole_shebang()
 	except:
-		log.warning("CLI failed")
+		log.exception("CLI failed")
 
 
 @cli.command(help="Ubuntu Cloud images, extracts kernel and initrd from qcow2")
@@ -67,7 +68,22 @@ def ubuntu(release, mirror):
 		d = Ubuntu(release, mirror)
 		d.cli_the_whole_shebang()
 	except:
-		log.warning("CLI failed")
+		log.exception("CLI failed")
+
+
+@cli.command(help="Armbian Cloud images, extracts kernel and initrd from qcow2")
+@click.option(
+	'--release', envvar="RELEASE", default="bookworm",
+	help='Armbian release; can be bullseye/bookworm/trixie for Debian but also jammy/mantic/noble etc for Ubuntu variants')
+@click.option(
+	'--branch', envvar="BRANCH", default="edge", help='Armbian branch, usually current/edge/legacy')
+def armbian(release, branch):
+	try:
+		log.info('Armbian')
+		d = Armbian(release, branch)
+		d.cli_the_whole_shebang()
+	except:
+		log.exception("CLI failed")
 
 
 if __name__ == '__main__':

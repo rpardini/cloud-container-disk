@@ -111,7 +111,19 @@ class DevicePathMounter:
 		if len(all_globs) != 1:
 			if len(all_globs) == 0:
 				log.error(f"Found no '{glob_pattern}' files in {self.mountpoint}")
-			shell_passthrough(["ls", "-lah", f"{self.mountpoint}{prefix}"])
+
+			log.warning(f"Listing contents of {self.mountpoint}")
+			try:
+				shell_passthrough(["ls", "-lah", f"{self.mountpoint}"])
+			except Exception as e:
+				log.error(f"Could not list contents of {self.mountpoint}: {e}")
+
+			log.warning(f"Listing contents of {self.mountpoint}/{prefix}")
+			try:
+				shell_passthrough(["ls", "-lah", f"{self.mountpoint}/{prefix}"])
+			except Exception as e:
+				log.error(f"Could not list contents of {self.mountpoint}/{prefix}: {e}")
+
 			raise Exception(f"Found {len(all_globs)} '{glob_pattern}' files in {self.mountpoint}: {all_globs}")
 
 		result = all_globs[0]

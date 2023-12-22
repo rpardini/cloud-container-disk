@@ -35,8 +35,10 @@ jobs:
           - { distro: debian, id: "debian-bookworm", env: { RELEASE: "bookworm" } }
           - { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
           - { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
+          - { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge" }, skipCache: true }
     env:
       BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
     steps:
 
@@ -52,7 +54,7 @@ jobs:
 
       - name: qemu-utils dep & modprobe nbd
         run: |
-          sudo apt install qemu-utils
+          sudo apt install qemu-utils pixz
           sudo modprobe nbd max_part=8
 
       - name: setup python 3.10
@@ -73,7 +75,6 @@ jobs:
           .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Commit changes to the examples directory
-        if: ${{ github.repository_owner == 'rpardini' }}
         run: |
           git config --global user.name "GHA workflow"
           git config --global user.email "workflow@github.com"
@@ -85,6 +86,7 @@ jobs:
       # Two separate caching steps, since 2 qcow2 are too big to be cached together
       - name: Cache qcow2 arm64 - ${{ steps.info.outputs.qcow2-arm64 }}
         uses: actions/cache@v3
+        if: ${{ ( ! (matrix.skipCache == true) ) }}
         with:
           path: ${{ steps.info.outputs.qcow2-arm64 }}
           key: ${{ steps.info.outputs.qcow2-arm64 }}
@@ -92,6 +94,7 @@ jobs:
 
       - name: Cache qcow2 amd64 - ${{ steps.info.outputs.qcow2-amd64 }}
         uses: actions/cache@v3
+        if: ${{ ( ! (matrix.skipCache == true) ) }}
         with:
           path: ${{ steps.info.outputs.qcow2-amd64 }}
           key: ${{ steps.info.outputs.qcow2-amd64 }}

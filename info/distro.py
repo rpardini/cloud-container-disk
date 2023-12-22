@@ -75,14 +75,6 @@ class DistroBaseInfo:
 		log.info(
 			f"version: [bold]{self.version}[/bold] oci_tag_version: [bold]{self.oci_tag_version}[/bold] oci_tag_latest: [bold]{self.oci_tag_latest}[/bold]")
 
-	def grab_arch_versions(self) -> set[string]:
-		ret = set()
-		for arch in self.arches:
-			log.info("Grabbing version for arch: ", arch.slug)
-			arch.grab_version()
-			ret.add(arch.version)
-		return ret
-
 	def download_qcow2(self):
 		for arch in self.arches:
 			arch.download_arch_qcow2()
