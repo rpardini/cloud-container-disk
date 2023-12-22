@@ -47,10 +47,6 @@ class Armbian(DistroBaseInfo):
 	def kernel_cmdline(self) -> list[string]:
 		return ["root=PARTLABEL=rootfs", "ro"]
 
-	def boot_partition_num(self) -> int:
-		log.info(f"Armbian {self.release} uses rootfs booting at partition 3 and kernel in boot/ directory")
-		return 3
-
 	def boot_dir_prefix(self) -> string:
 		log.info(f"Armbian {self.release} uses rootfs booting at partition 3 and kernel in boot/ directory")
 		return "boot/"
@@ -66,6 +62,12 @@ class ArmbianArchInfo(DistroBaseArchInfo):
 	gh_release_version: string = None
 	gh_asset_filename: string = None
 	gh_asset_dl_url: string = None
+
+	def boot_partition_num(self) -> int:
+		log.info(f"Armbian {self.distro.release} uses rootfs booting at partition 3 (2 for arm64) and kernel in boot/ directory")
+		if self.docker_slug == "arm64":
+			return 2  # esp + rootfs
+		return 3  # "bios" partition, esp, rootfs
 
 	def grab_version(self):
 		self.gh_release_version = None
