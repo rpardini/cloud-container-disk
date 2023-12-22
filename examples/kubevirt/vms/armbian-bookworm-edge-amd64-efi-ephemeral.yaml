@@ -1,0 +1,70 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: armbian-bookworm-edge-amd64-efi-ephemeral # EFI boot, distro pre-set kernel cmdline, ephemeral ESP/rootfs disk
+spec:
+  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: armbian-bookworm-edge-amd64-efi-ephemeral
+        app.kubernetes.io/name: VM_armbian-bookworm-edge-amd64-efi-ephemeral # For Hubble & others
+    spec:
+      architecture: amd64
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      domain:
+        machine:
+          type: q35 # for amd64
+        chassis:
+          serial: pardini-chassis-serial
+          asset: pardini-chassis-asset
+          sku: pardini-chassis-sku
+          version: pardini-chassis-version
+          manufacturer: "pardini-chassis-manufacturer"
+        firmware:
+          # UEFI: boots grub which defines cmdline, kernel & initrd # 
+          bootloader:
+            efi:
+              secureBoot: false
+        cpu:
+          cores: 4
+        devices:
+          autoattachGraphicsDevice: false # no graphics, thanks
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+              serial: containerdiskserial
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+              serial: cloudinitdiskserial
+            - name: emptydisk
+              serial: emptydiskserial
+              disk:
+                bus: virtio
+          interfaces:
+            - masquerade: { }
+              name: default
+          rng: { } # source of randomness
+        resources:
+          requests:
+            memory: 4G
+      networks:
+        - name: default
+          pod: { }
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
+            image: ghcr.io/rpardini/armbian-cloud-container-disk:bookworm-edge-latest
+            imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
+          name: containerdisk
+        - cloudInitNoCloud: # auto create .ISOs for us, thanks.
+            userData: |-
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/armbian-bookworm-edge_kubevirt_amd64
+          name: cloudinitdisk
+        - name: emptydisk # throwaway disk, for testing. does not persist.
+          emptyDisk:
+            capacity: 2Gi
