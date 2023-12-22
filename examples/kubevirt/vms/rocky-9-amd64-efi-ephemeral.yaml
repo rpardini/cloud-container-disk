@@ -14,19 +14,15 @@ spec:
       architecture: amd64
       nodeSelector:
         kubernetes.io/arch: amd64
-
       domain:
-        #machine:
-        #  type: virt # virt is the only option for arm64
-        # machine.type not specified, defaults to q35 on x86
-
+        machine:
+          type: q35 # for amd64
         chassis:
           serial: pardini-chassis-serial
           asset: pardini-chassis-asset
           sku: pardini-chassis-sku
           version: pardini-chassis-version
           manufacturer: "pardini-chassis-manufacturer"
-
         firmware:
           # UEFI: boots grub which defines cmdline, kernel & initrd # 
           bootloader:
@@ -49,10 +45,6 @@ spec:
               serial: emptydiskserial
               disk:
                 bus: virtio
-            #- disk:
-            #    bus: virtio
-            #  name: host-disk
-            #  serial: host-disk-serial
           interfaces:
             - masquerade: { }
               name: default
@@ -69,18 +61,10 @@ spec:
             image: ghcr.io/rpardini/rocky-cloud-container-disk:9-latest
             imagePullPolicy: Always # Since we're using a "latest" above, we need to force a pull every time.
           name: containerdisk
-
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
             userData: |-
               #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/rocky-9_kubevirt_amd64
           name: cloudinitdisk
-
         - name: emptydisk # throwaway disk, for testing. does not persist.
           emptyDisk:
             capacity: 2Gi
-
-        #- hostDisk: # persistent disk, using a file directly on the k8s host running this VM. Similar to hostPath, but with a .img wrapper.
-        #    capacity: 3Gi
-        #    path: /var/lib/opensearch/kubevirt-hostdisk-fedora.img
-        #    type: DiskOrCreate
-        #  name: host-disk
