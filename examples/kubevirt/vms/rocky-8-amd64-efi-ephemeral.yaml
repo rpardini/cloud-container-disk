@@ -11,9 +11,9 @@ spec:
         kubevirt.io/vm: rocky-8-amd64-efi-ephemeral
         app.kubernetes.io/name: VM_rocky-8-amd64-efi-ephemeral # For Hubble & others
     spec:
-      architecture: x86_64
+      architecture: amd64
       nodeSelector:
-        kubernetes.io/arch: x86_64
+        kubernetes.io/arch: amd64
 
       domain:
         #machine:
