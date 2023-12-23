@@ -31,11 +31,11 @@ jobs:
           - { distro: rocky, id: "rocky-8", env: { RELEASE: "8" } }
           - { distro: rocky, id: "rocky-9", env: { RELEASE: "9" } }
           - { distro: fedora, id: "fedora-39", env: { RELEASE: "39" } }
-          # - { distro: armbian, id: "armbian-bookworm", env: { RELEASE: "bookworm" } }
           - { distro: debian, id: "debian-bookworm", env: { RELEASE: "bookworm" } }
           - { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
           - { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
           - { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge" }, skipCache: true }
+          - { distro: armbian, id: "armbian-trixie-edge", env: { RELEASE: "trixie", BRANCH: "edge" }, skipCache: true }
     env:
       BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
