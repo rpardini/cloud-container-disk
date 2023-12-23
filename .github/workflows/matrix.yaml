@@ -7,22 +7,11 @@ on:
 
 jobs:
 
-  prepare:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Prepare release ID
-        id: prep
-        run: |
-          echo ::set-output name=created::$(date -u +'%Y%m%d-%H%M')
-    outputs:
-      created: ${{ steps.prep.outputs.created }} # refer to as ${{needs.prepare.outputs.created}}
-
   build:
     permissions:
       packages: write # to write to ghcr.io
       contents: write # to commit to the repo (examples)
     
-    needs: [ prepare ]
     runs-on: "ubuntu-latest" # ${{ matrix.arch.runner }}
     strategy:
       fail-fast: false # let other jobs try to complete if one fails
@@ -40,6 +29,8 @@ jobs:
       BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
+    name: "${{ matrix.id }} (${{ matrix.distro }})"
+    
     steps:
 
       - name: Checkout build repo
@@ -56,6 +47,8 @@ jobs:
         run: |
           sudo apt install qemu-utils pixz
           sudo modprobe nbd max_part=8
+          # pull skopeo image, so we can use it later faster
+          docker pull quay.io/skopeo/stable:latest
 
       - name: setup python 3.10
         uses: actions/setup-python@v5
@@ -86,7 +79,7 @@ jobs:
       # Two separate caching steps, since 2 qcow2 are too big to be cached together
       - name: Cache qcow2 arm64 - ${{ steps.info.outputs.qcow2-arm64 }}
         uses: actions/cache@v3
-        if: ${{ ( ! (matrix.skipCache == true) ) }}
+        if: ${{ (steps.info.outputs.uptodate == 'no') && ( ! (matrix.skipCache == true) ) }}
         with:
           path: ${{ steps.info.outputs.qcow2-arm64 }}
           key: ${{ steps.info.outputs.qcow2-arm64 }}
@@ -94,7 +87,7 @@ jobs:
 
       - name: Cache qcow2 amd64 - ${{ steps.info.outputs.qcow2-amd64 }}
         uses: actions/cache@v3
-        if: ${{ ( ! (matrix.skipCache == true) ) }}
+        if: ${{ (steps.info.outputs.uptodate == 'no') && ( ! (matrix.skipCache == true) ) }}
         with:
           path: ${{ steps.info.outputs.qcow2-amd64 }}
           key: ${{ steps.info.outputs.qcow2-amd64 }}
@@ -102,6 +95,7 @@ jobs:
 
       - name: Actually process ${{matrix.id}}
         id: magic
+        if: ${{ (steps.info.outputs.uptodate == 'no') }}
         env: ${{ matrix.env }}
         run: |
           DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
@@ -112,7 +106,7 @@ jobs:
           sudo --preserve-env chown -R $USER:$USER . || true
 
   release:
-    needs: [ prepare, build ] # depend on the previous jobs...
+    needs: [ build ] # depend on the previous jobs...
     if: "${{ !cancelled() }}" # ... but run even if (some of) them failed, but not if job was cancelled
     runs-on: ubuntu-latest
     steps:

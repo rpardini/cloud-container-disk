@@ -1,6 +1,7 @@
 # Pay attention, work step by step, use modern (3.10+) Python syntax and features.
 
 import glob
+import json
 import logging
 import os
 import string
@@ -50,6 +51,27 @@ def shell_passthrough(arg_list: list[string]):
 		raise Exception(
 			f"shell command failed: {arg_list} with return code {result.returncode} ")
 	log.debug(f"shell: {arg_list} exitcode: {result.returncode}")
+
+
+def shell_all_info(arg_list: list[string]) -> dict[str, str]:
+	log.debug(f"shell: {arg_list}")
+	result = subprocess.run(arg_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	utf8_stdout = result.stdout.decode("utf-8")
+	utf8_stderr = result.stderr.decode("utf-8")
+	log.debug(f"shell: {arg_list} exitcode: {result.returncode} stdout:\n{utf8_stdout} stderr:\n{utf8_stderr}")
+	return {"stdout": utf8_stdout, "stderr": utf8_stderr, "exitcode": result.returncode}
+
+
+def skopeo_inspect_remote_ref(oci_ref):
+	log.debug(f"skopeo_inspect_remote_ref: {oci_ref}")
+	output = shell_all_info(["docker", "run", "-it", "quay.io/skopeo/stable:latest", "inspect", f"docker://{oci_ref}"])
+	log.debug(f"skopeo_inspect_remote_ref: {output}")
+	if output["exitcode"] != 0:
+		if "manifest unknown" in output["stderr"] or "manifest unknown" in output["stdout"]:
+			log.debug(f"skopeo_inspect_remote_ref: manifest unknown, returning None")
+			return None
+		raise Exception(f"skopeo_inspect_remote_ref: failed: {output}")
+	return json.loads(output["stdout"])
 
 
 # ‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹

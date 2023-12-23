@@ -12,6 +12,7 @@ from containerdisk import MultiArchImage
 from distro_arch import DistroBaseArchInfo
 from utils import set_gha_output
 from utils import setup_logging
+from utils import skopeo_inspect_remote_ref
 
 log: logging.Logger = setup_logging("distro")
 
@@ -120,7 +121,16 @@ class DistroBaseInfo:
 		for oci_image in self.oci_images:
 			self.oci_images_by_type[oci_image.type] = oci_image
 
-		# @TODO: check if versioned images already exist; if so, do nothing -- no use in rebuilding
+		# check if versioned images already exist; if so, do nothing -- no use in rebuilding
+		all_up_to_date = True
+		for oci_image in self.oci_images:
+			skopeo_result = skopeo_inspect_remote_ref(oci_image.full_ref_version)
+			log.info(f"skopeo_result: '{skopeo_result}' for '{oci_image.full_ref_version}'")
+			if skopeo_result is None:
+				all_up_to_date = False
+
+		gha_skopeo = 'yes' if all_up_to_date else 'no'
+		set_gha_output("uptodate", gha_skopeo)
 
 		# output GHA outputs with the qcow2 filenames, for GHA caching steps
 		for arch in self.arches:
