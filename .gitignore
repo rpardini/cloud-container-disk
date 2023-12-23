@@ -1,2 +1,4 @@
 .idea
 *.json
+.venv
+info/__pycache__
