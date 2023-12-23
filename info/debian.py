@@ -46,8 +46,12 @@ class Debian(DistroBaseInfo):
 		self.oci_tag_latest = self.release + "-latest"
 
 	def boot_partition_num(self) -> int:
-		log.info("Debian's default boot partition number is 2, but we need different")
+		log.info("Debian: Using partition n. 1 (rootfs) for booting, with boot/ directory.")
 		return 1
+
+	def boot_dir_prefix(self) -> string:
+		log.info("Debian: Using partition n. 1 (rootfs) for booting, with boot/ directory.")
+		return "boot/"
 
 
 class DebianArchInfo(DistroBaseArchInfo):
