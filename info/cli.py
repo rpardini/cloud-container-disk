@@ -82,10 +82,12 @@ def ubuntu(release, mirror):
 	help='Armbian release; can be bullseye/bookworm/trixie for Debian but also jammy/mantic/noble etc for Ubuntu variants')
 @click.option(
 	'--branch', envvar="BRANCH", default="edge", help='Armbian branch, usually current/edge/legacy')
-def armbian(release, branch):
+@click.option(
+	'--extra-release', envvar="EXTRA_RELEASE", default="", help='Extra release, for example k8s-1.28')
+def armbian(release, branch, extra_release):
 	try:
 		log.info('Armbian')
-		d = Armbian(release, branch)
+		d = Armbian(release, branch, extra_release)
 		d.cli_the_whole_shebang()
 	except:
 		log.exception("CLI failed")

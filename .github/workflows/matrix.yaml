@@ -23,8 +23,8 @@ jobs:
           - { distro: debian, id: "debian-bookworm", env: { RELEASE: "bookworm" } }
           - { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
           - { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
-          - { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge" }, skipCache: true }
-          - { distro: armbian, id: "armbian-trixie-edge", env: { RELEASE: "trixie", BRANCH: "edge" }, skipCache: true }
+          - { distro: armbian, id: "armbian-bookworm-edge-k8s-1.28", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
+          - { distro: armbian, id: "armbian-jammy-edge-k8s-1.28", env: { RELEASE: "jammy", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
     env:
       BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

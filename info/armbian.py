@@ -19,11 +19,13 @@ class Armbian(DistroBaseInfo):
 
 	# Read from environment var RELEASE, or use default.
 	release: string
+	extra_release: string
 	branch: string
 	variant: string
 
-	def __init__(self, release, branch):
+	def __init__(self, release, branch, extra_release):
 		self.release = release
+		self.extra_release = extra_release
 		self.branch = branch
 		self.variant = "metadata-cloud"
 
@@ -38,11 +40,18 @@ class Armbian(DistroBaseInfo):
 
 	def set_version_from_arch_versions(self, arch_versions: set[string]) -> string:
 		self.version = "-".join(arch_versions)  # just join all distinct versions, hopefully there is only one
-		self.oci_tag_version = self.release + "-" + self.branch + "-" + self.version
-		self.oci_tag_latest = self.release + "-" + self.branch + "-latest"
+		if self.extra_release is None or self.extra_release == "":
+			self.oci_tag_version = self.release + "-" + self.branch + "-" + self.version
+			self.oci_tag_latest = self.release + "-" + self.branch + "-latest"
+		else:
+			self.oci_tag_version = self.release + "-" + self.extra_release + "-" + self.branch + "-" + self.version
+			self.oci_tag_latest = self.release + "-" + self.extra_release + "-" + self.branch + "-latest"
 
 	def slug(self) -> string:
-		return f"armbian-{self.release}-{self.branch}"
+		if self.extra_release is None or self.extra_release == "":
+			return f"armbian-{self.release}-{self.branch}"
+		else:
+			return f"armbian-{self.release}-{self.extra_release}-{self.branch}"
 
 	def kernel_cmdline(self) -> list[string]:
 		return ["root=PARTLABEL=rootfs", "ro"]
@@ -74,7 +83,11 @@ class ArmbianArchInfo(DistroBaseArchInfo):
 		self.gh_asset_filename = None
 		self.gh_asset_dl_url = None
 
-		searched_variant_token = f"-{self.distro.variant}.img"
+		if self.distro.extra_release is None or self.distro.extra_release == "":
+			searched_variant_token = f"-{self.distro.variant}.img"
+		else:
+			searched_variant_token = f"-{self.distro.variant}-{self.distro.extra_release}.img"
+
 		searched_slugh_release_branch_tokens = f"{self.slug}_{self.distro.release}_{self.distro.branch}"
 
 		github = Github()
