@@ -1,0 +1,70 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: armbian-trixie-k8s-1.28-ddk-arm64-efi-ephemeral # EFI boot, distro pre-set kernel cmdline, ephemeral ESP/rootfs disk
+spec:
+  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: armbian-trixie-k8s-1.28-ddk-arm64-efi-ephemeral
+        app.kubernetes.io/name: VM_armbian-trixie-k8s-1.28-ddk-arm64-efi-ephemeral # For Hubble & others
+    spec:
+      architecture: arm64
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      domain:
+        machine:
+          type: virt # for arm64
+        chassis:
+          serial: pardini-chassis-serial
+          asset: pardini-chassis-asset
+          sku: pardini-chassis-sku
+          version: pardini-chassis-version
+          manufacturer: "pardini-chassis-manufacturer"
+        firmware:
+          # UEFI: boots grub which defines cmdline, kernel & initrd # 
+          bootloader:
+            efi:
+              secureBoot: false
+        cpu:
+          cores: 4
+        devices:
+          autoattachGraphicsDevice: false # no graphics, thanks
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+              serial: containerdiskserial
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+              serial: cloudinitdiskserial
+            - name: emptydisk
+              serial: emptydiskserial
+              disk:
+                bus: virtio
+          interfaces:
+            - masquerade: { }
+              name: default
+          rng: { } # source of randomness
+        resources:
+          requests:
+            memory: 4G
+      networks:
+        - name: default
+          pod: { }
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
+            image: ghcr.io/rpardini/armbian-cloud-container-disk:trixie-k8s-1.28-ddk-24.03.03-rpardini-940 # Or: ghcr.io/rpardini/armbian-cloud-container-disk:trixie-k8s-1.28-ddk-latest
+            imagePullPolicy: IfNotPresent # or: Always # if you use "latest" above
+          name: containerdisk
+        - cloudInitNoCloud: # auto create .ISOs for us, thanks.
+            userData: |-
+              #include https://cloud-init.pardini.net/rpardini/oldskool-rpardini/master/armbian-trixie-k8s-1.28-ddk_kubevirt_arm64
+          name: cloudinitdisk
+        - name: emptydisk # throwaway disk, for testing. does not persist.
+          emptyDisk:
+            capacity: 2Gi
