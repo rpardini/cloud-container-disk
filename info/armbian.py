@@ -97,7 +97,7 @@ class ArmbianArchInfo(DistroBaseArchInfo):
 		else:
 			log.warning("GITHUB_TOKEN not set in environment, will use anonymous API calls (lower rate limits)!")
 
-		repo = github.get_repo("rpardini/armbian-release")
+		repo = github.get_repo("armsurvivors/armbian-release")
 		log.debug(f"repo: {repo}")
 		repo_releases = repo.get_releases().get_page(0)
 		log.debug(f"repo_releases: {repo_releases}")
