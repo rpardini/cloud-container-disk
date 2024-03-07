@@ -58,7 +58,7 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
         - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
-            image: ghcr.io/rpardini/armbian-cloud-container-disk:jammy-k8s-1.28-edge-24.03.07-rpardini-962 # Or: ghcr.io/rpardini/armbian-cloud-container-disk:jammy-k8s-1.28-edge-latest
+            image: ghcr.io/rpardini/armbian-cloud-container-disk:jammy-k8s-1.28-edge-24.03.07-armsurvivors-5 # Or: ghcr.io/rpardini/armbian-cloud-container-disk:jammy-k8s-1.28-edge-latest
             imagePullPolicy: IfNotPresent # or: Always # if you use "latest" above
           name: containerdisk
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
