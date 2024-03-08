@@ -67,7 +67,7 @@ def skopeo_inspect_remote_ref(oci_ref):
 	output = shell_all_info(["docker", "run", "quay.io/skopeo/stable:latest", "inspect", f"docker://{oci_ref}"])
 	log.debug(f"skopeo_inspect_remote_ref: {output}")
 	if output["exitcode"] != 0:
-		if "manifest unknown" in output["stderr"] or "manifest unknown" in output["stdout"]:
+		if "manifest unknown" in output["stderr"] or "manifest unknown" in output["stdout"] or "Requesting bearer token" in output["stdout"]:
 			log.debug(f"skopeo_inspect_remote_ref: manifest unknown, returning None")
 			return None
 		raise Exception(f"skopeo_inspect_remote_ref: failed: {output}")

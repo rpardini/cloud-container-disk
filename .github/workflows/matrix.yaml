@@ -57,7 +57,7 @@ jobs:
           sudo apt install qemu-utils pixz 
           sudo modprobe nbd max_part=8
           # pull skopeo image, so we can use it later faster
-          docker pull quay.io/skopeo/stable:latest
+          docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest 
 
       - name: setup python 3.10
         uses: actions/setup-python@v5
