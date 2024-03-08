@@ -34,7 +34,7 @@ jobs:
           - { distro: armbian, id: "armbian-noble-edge-k8s-1.28", env: { RELEASE: "noble", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
           - { distro: armbian, id: "armbian-noble-ddk-k8s-1.28", env: { RELEASE: "noble", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
     env:
-      BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/"
+      BASE_OCI_REF: "ghcr.io/${{ github.repository_owner }}/containerdisk/"
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
     name: "${{ matrix.id }} (${{ matrix.distro }})"
