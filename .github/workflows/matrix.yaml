@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - { distro: rocky, id: "rocky-8", env: { RELEASE: "8" } }
-          - { distro: rocky, id: "rocky-9", env: { RELEASE: "9" } }
+          # - { distro: rocky, id: "rocky-9", env: { RELEASE: "9" } } # @TODO: broken, needs further logic to select latest image out of many possible matching ones
           - { distro: fedora, id: "fedora-39", env: { RELEASE: "39" } }
           - { distro: debian, id: "debian-bookworm", env: { RELEASE: "bookworm" } }
           - { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
