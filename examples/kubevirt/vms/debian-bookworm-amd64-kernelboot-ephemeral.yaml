@@ -28,7 +28,7 @@ spec:
           kernelBoot:
             container:
               # note: version must match the modules which are in the rootfs containerDisk
-              image: ghcr.io/rpardini/containerdisk/debian-cloud-kernel-kv:bookworm-20240712-1806 # Or: ghcr.io/rpardini/containerdisk/debian-cloud-kernel-kv:bookworm-latest
+              image: ghcr.io/rpardini/containerdisk/debian-cloud-kernel-kv:bookworm-20240713-1807 # Or: ghcr.io/rpardini/containerdisk/debian-cloud-kernel-kv:bookworm-latest
               imagePullPolicy: IfNotPresent # or:  Always # if using "latest" above
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
@@ -63,7 +63,7 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
         - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
-            image: ghcr.io/rpardini/containerdisk/debian-cloud-container-disk:bookworm-20240712-1806 # Or: ghcr.io/rpardini/containerdisk/debian-cloud-container-disk:bookworm-latest
+            image: ghcr.io/rpardini/containerdisk/debian-cloud-container-disk:bookworm-20240713-1807 # Or: ghcr.io/rpardini/containerdisk/debian-cloud-container-disk:bookworm-latest
             imagePullPolicy: IfNotPresent # or: Always # if you use "latest" above
           name: containerdisk
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
