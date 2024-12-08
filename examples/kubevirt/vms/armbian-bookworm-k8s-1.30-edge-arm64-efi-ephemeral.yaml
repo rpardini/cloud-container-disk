@@ -4,7 +4,7 @@ kind: VirtualMachine
 metadata:
   name: armbian-bookworm-k8s-1.30-edge-arm64-efi-ephemeral # EFI boot, distro pre-set kernel cmdline, ephemeral ESP/rootfs disk
 spec:
-  running: false # this defines the VM as stopped, you need to start it manually with virtctl
+  runStrategy: Manual # you need to start it manually with virtctl
   template:
     metadata:
       labels:
