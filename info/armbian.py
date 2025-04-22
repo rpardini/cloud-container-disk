@@ -31,8 +31,8 @@ class Armbian(DistroBaseInfo):
 
 		super().__init__(
 			arches=[
-				ArmbianArchInfo(distro=self, docker_slug="arm64", slug="Uefi-arm64"),
-				ArmbianArchInfo(distro=self, docker_slug="amd64", slug="Uefi-x86")
+				ArmbianArchInfo(distro=self, docker_slug="arm64", slug="uefi-arm64"),
+				ArmbianArchInfo(distro=self, docker_slug="amd64", slug="uefi-x86")
 			],
 			default_oci_ref_disk="armbian-cloud-container-disk",
 			default_oci_ref_kernel="armbian-cloud-kernel-kv"
