@@ -56,7 +56,7 @@ jobs:
       - name: qemu-utils dep & modprobe nbd
         run: |
           sudo apt update
-          sudo apt install qemu-utils pixz 
+          sudo apt install qemu-utils pixz parted
           sudo modprobe nbd max_part=8
           # pull skopeo image, so we can use it later faster
           docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest 
