@@ -102,7 +102,14 @@ class NBDImageMounter:
     def __enter__(self):
         shell(["udevadm", "settle"])
         log.info(f"Connecting {self.image_filename} to nbd device {self.nbd_device}")
-        shell(["qemu-nbd", f"--connect={self.nbd_device}", f"{self.image_filename}"])
+        shell(
+            [
+                "qemu-nbd",
+                "--read-only",
+                f"--connect={self.nbd_device}",
+                f"{self.image_filename}",
+            ]
+        )
         shell(["partprobe", f"{self.nbd_device}"])
         shell(["fdisk", "-l", f"{self.nbd_device}"])
         shell(["lsblk", "-f", f"{self.nbd_device}"])
