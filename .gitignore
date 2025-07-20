@@ -1,4 +1,5 @@
 .idea
 *.json
 .venv
+.venv_mac
 info/__pycache__
