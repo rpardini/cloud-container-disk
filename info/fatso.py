@@ -102,9 +102,9 @@ class FatsoArchInfo(DistroBaseArchInfo):
             raise Exception(f"Could not find valid asset for {self.slug}")
 
         qcow2_url_filename = self.gh_asset_filename
-        qcow2_basename = os.path.basename(qcow2_url_filename)[: -len(".img.qcow2.gz")]
+        qcow2_basename = os.path.basename(qcow2_url_filename)[: -len(".qcow2.gz")]
 
-        self.qcow2_is_xz = True # @TODO: gz, not xz
+        self.qcow2_is_gz = True # GZ, not XZ
         self.qcow2_filename = f"{qcow2_basename}.qcow2"
         self.vmlinuz_final_filename = f"{qcow2_basename}.vmlinuz"
         self.initramfs_final_filename = f"{qcow2_basename}.initramfs"
