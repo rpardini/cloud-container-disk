@@ -23,6 +23,7 @@ class DistroBaseArchInfo:
     vmlinuz_final_filename: string = None
     initramfs_final_filename: string = None
     qcow2_is_xz: bool
+    qcow2_is_gz: bool
 
     @abstractmethod
     def grab_version(self) -> string:
@@ -33,6 +34,7 @@ class DistroBaseArchInfo:
         self.docker_slug = docker_slug
         self.slug = slug
         self.qcow2_is_xz = False
+        self.qcow2_is_gz = False
 
     def download_arch_qcow2(self):
         log.info(f"Architecture: {self.slug}: {self}")
@@ -48,6 +50,10 @@ class DistroBaseArchInfo:
                 log.info(f"Adding .xz extension to {down_output_fn}")
                 down_output_fn += ".xz"
 
+            if self.qcow2_is_gz:
+                log.info(f"Adding .gz extension to {down_output_fn}")
+                down_output_fn += ".gz"
+
             shell_passthrough([f"curl", "-L", "-o", down_output_fn, f"{self.qcow2_url}"])
             log.info(f"Downloaded {self.qcow2_url} to {down_output_fn}")
 
@@ -55,6 +61,11 @@ class DistroBaseArchInfo:
                 log.info(f"Uncompressing {down_output_fn} to {self.qcow2_filename}")
                 shell_passthrough([f"pixz", "-d", f"{down_output_fn}"])
                 down_output_fn = down_output_fn[:-3]  # # remove the .xz extension from the filename
+
+            if self.qcow2_is_gz:  # uncompress, using pigz
+                log.info(f"Uncompressing {down_output_fn} to {self.qcow2_filename}")
+                shell_passthrough([f"pigz", "-d", f"{down_output_fn}"])
+                down_output_fn = down_output_fn[:-3]  # # remove the .gz extension from the filename
 
             # Rename the temp file to the final filename.
             log.info(f"Renaming {down_output_fn} to {self.qcow2_filename}")
