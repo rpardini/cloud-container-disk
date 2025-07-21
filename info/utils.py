@@ -1,14 +1,17 @@
 # Pay attention, work step by step, use modern (3.10+) Python syntax and features.
 
 import glob
+import hashlib
 import json
 import logging
 import os
+import pickle
 import string
 import subprocess
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+from github import Github
 from rich.console import Console
 from rich.logging import RichHandler
 
@@ -216,3 +219,75 @@ def setup_logging(name: string) -> logging.Logger:
         handlers=[RichHandler(rich_tracebacks=True, markup=True, console=singleton_console)],
     )
     return logging.getLogger(name)
+
+
+# Getting assets from GitHub releases
+class GitHubReleaseReleaseAssets:
+    release_tag: str | None = None
+
+    def __init__(self, github_org_repo: string, release_tag: str = None):
+        self.github_org_repo = github_org_repo
+        self.release_tag = release_tag
+
+    # cache (with pickle) for self.fetch_release_assets
+    def get_release_assets(self):
+        # get an MD5 hash (32-char string) of the inputs
+        inputs_hash = {
+            "org_repo": self.github_org_repo,
+            "release_tag": self.release_tag,
+        }
+        input_md5 = hashlib.md5(json.dumps(inputs_hash, sort_keys=True).encode()).hexdigest()
+
+        # ensure "cache" directory exists in current working directory, otherwise create it
+        cache_dir = "cache"
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+
+        # check if the cache file exists; if not, fetch the release assets and pickle them
+        cache_file_pickle = os.path.join(cache_dir, f"gh_release_assets_{input_md5}.pkl")
+        if os.path.exists(cache_file_pickle):
+            # read from pickle cache file
+            log.info(f"Cache file {cache_file_pickle} exists, loading cached release assets...")
+            with open(cache_file_pickle, "rb") as fh:
+                cached_values = pickle.load(fh)
+            log.info(f"Loaded cached release assets from {cache_file_pickle}")
+            return cached_values
+
+        log.warning(f"Cache file {cache_file_pickle} does not exist, fetching release assets...")
+        fetched_values = self.fetch_release_assets()
+
+        # pickle the assets to the cache file
+        with open(cache_file_pickle, "wb") as fh:
+            pickle.dump(fetched_values, fh)
+        log.info(f"Cached release assets to {cache_file_pickle}")
+        return fetched_values
+
+    def fetch_release_assets(self):
+        github = Github()
+        if os.environ.get("GITHUB_TOKEN", "") != "":
+            log.info("Using GITHUB_TOKEN from environment!")
+            github = Github(os.environ.get("GITHUB_TOKEN"))
+        else:
+            log.warning("GITHUB_TOKEN not set in environment, will use anonymous API calls (lower rate limits)!")
+
+        log.info(f"Fetching GitHub repo info for {self.github_org_repo}")
+        repo = github.get_repo(self.github_org_repo)
+
+        if self.release_tag is None:
+            log.info(f"Fetching first page of Release Assets for {self.github_org_repo}")
+            repo_releases = repo.get_releases().get_page(0)
+        else:
+            log.info(f"Fetching Release Assets for {self.github_org_repo} with tag {self.release_tag}")
+            repo_releases = [repo.get_release(self.release_tag)]
+
+        log.debug(f"repo_releases: {repo_releases}")
+        for repo_release in repo_releases:
+            log.debug(f"Trying repo_release '{repo_release.tag_name}' ")
+            # get all pages of assets for this release - expensive API call rate-limit wise
+            repo_release_assets_paged = repo_release.get_assets()
+            repo_release_assets = list(repo_release_assets_paged)
+            log.debug(f"repo_release_assets: {repo_release_assets}")
+            return {"assets": repo_release_assets, "repo_release": repo_release}
+
+        log.warning(f"No GH releases found.")
+        return None
