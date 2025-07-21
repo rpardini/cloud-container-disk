@@ -3,3 +3,4 @@
 .venv
 .venv_mac
 info/__pycache__
+cache
