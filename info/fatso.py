@@ -44,7 +44,7 @@ class Fatso(DistroBaseInfo):
         return ["root=PARTLABEL=rootfs", "ro"]  # @TODO: probably wrong
 
     def boot_dir_prefix(self) -> string:
-        log.info(f"Fatso {self.release} uses rootfs booting at partition 3 and kernel in boot/ directory")
+        log.info(f"Fatso {self.flavor} uses rootfs booting at partition 3 and kernel in boot/ directory")
         return "boot/"
 
 

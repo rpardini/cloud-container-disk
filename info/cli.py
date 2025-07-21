@@ -163,7 +163,7 @@ def armbian(release, branch, extra_release):
 )
 @click.option(
     "--fid",
-    envvar="ID",
+    envvar="FID",
     default="ka-rocky9-k8s",
     help="Fatso Flavor ID (name used in OCI tags and image slugs)",
 )

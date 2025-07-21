@@ -77,7 +77,7 @@ jobs:
         id: info
         env: ${{ matrix.env }}
         run: |
-          ID="${{matrix.id}}" .venv/bin/python info/cli.py ${{ matrix.distro }}
+          FID="${{matrix.id}}" .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Commit changes to the examples directory
         run: |
@@ -110,7 +110,7 @@ jobs:
         if: ${{ (steps.info.outputs.uptodate == 'no') }}
         env: ${{ matrix.env }}
         run: |
-          ID="${{matrix.id}}" DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
+          FID="${{matrix.id}}" DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
             sudo --preserve-env .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Fix permissions after sudo'ed run
