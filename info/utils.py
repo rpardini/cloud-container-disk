@@ -158,13 +158,13 @@ class DevicePathMounter:
 
             log.warning(f"Listing contents of {self.mountpoint}")
             try:
-                shell_passthrough(["ls", "-lah", f"{self.mountpoint}"])
+                shell_passthrough(["find", f"{self.mountpoint}", "-type", "f", "-print"])
             except Exception as e:
                 log.error(f"Could not list contents of {self.mountpoint}: {e}")
 
             log.warning(f"Listing contents of {self.mountpoint}/{prefix}")
             try:
-                shell_passthrough(["ls", "-lah", f"{self.mountpoint}/{prefix}"])
+                shell_passthrough(["find", f"{self.mountpoint}/{prefix}", "-type", "f", "-print"])
             except Exception as e:
                 log.error(f"Could not list contents of {self.mountpoint}/{prefix}: {e}")
 
