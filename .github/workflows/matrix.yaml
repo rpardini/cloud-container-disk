@@ -26,7 +26,7 @@ jobs:
           #- { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "" }, skipCache: true }
           - { distro: armbian, id: "armbian-bookworm-edge-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           - { distro: armbian, id: "armbian-trixie-edge-k8s-1.32", env: { RELEASE: "trixie", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
-          - { distro: fatso, id: "fatso-rocky9-k8s", env: { FLAVOR: "ka-rocky-cloud-k8s-el-containerd-qemu" }, skipCache: true }
+          - { distro: fatso, id: "rocky9-k8s", env: { FLAVOR: "ka-rocky-cloud-k8s-el-containerd-qemu" }, skipCache: true }
           #- { distro: armbian, id: "armbian-bookworm-ddk-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           #- { distro: armbian, id: "armbian-bookworm-ddk-k8s-1.28", env: { RELEASE: "bookworm", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
           #- { distro: armbian, id: "armbian-trixie-edge", env: { RELEASE: "trixie", BRANCH: "edge", EXTRA_RELEASE: "" }, skipCache: true }
