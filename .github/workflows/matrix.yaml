@@ -61,10 +61,10 @@ jobs:
           # pull skopeo image, so we can use it later faster
           docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest || docker pull quay.io/skopeo/stable:latest 
 
-      - name: setup python 3.10
+      - name: setup python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
           #cache: 'pip' # caching pip dependencies -- not useful, we're using venv
 
       - name: install pip deps
