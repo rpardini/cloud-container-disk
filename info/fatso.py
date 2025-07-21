@@ -44,8 +44,12 @@ class Fatso(DistroBaseInfo):
         return ["root=PARTLABEL=rootfs", "ro"]  # @TODO: probably wrong
 
     def boot_dir_prefix(self) -> string:
-        log.info(f"Fatso {self.flavor} uses rootfs booting at partition 3 and kernel in boot/ directory")
-        return "boot/"
+        log.info(f"Fatso {self.flavor} uses UKI-like booting from the ESP, directly in the root")
+        return ""
+
+    def handle_extract_kernel_initrd(self, arch: "FatsoArchInfo", nbd_counter):
+        log.info(f"Fatso (mkosi) uses UKI-like even for Grub booting!")
+        arch.extract_kernel_initrd_from_qcow2(nbd_counter, ["*/*/vmlinuz"], ["*/initrd"])
 
 
 @rich.repr.auto
@@ -60,12 +64,8 @@ class FatsoArchInfo(DistroBaseArchInfo):
     gh_asset_dl_url: string = None
 
     def boot_partition_num(self) -> int:
-        log.info(
-            f"Fatso {self.distro.flavor} uses rootfs booting at partition 3 (2 for arm64) and kernel in boot/ directory"
-        )
-        if self.docker_slug == "arm64":
-            return 2  # esp + rootfs
-        return 3  # "bios" partition, esp, rootfs
+        log.info(f"Fatso {self.distro.flavor} uses fat32 booting at partition 1 in the root")
+        return 1  # esp
 
     def grab_version(self):
         self.gh_release_version = None
@@ -104,7 +104,7 @@ class FatsoArchInfo(DistroBaseArchInfo):
         qcow2_url_filename = self.gh_asset_filename
         qcow2_basename = os.path.basename(qcow2_url_filename)[: -len(".qcow2.gz")]
 
-        self.qcow2_is_gz = True # GZ, not XZ
+        self.qcow2_is_gz = True  # GZ, not XZ
         self.qcow2_filename = f"{qcow2_basename}.qcow2"
         self.vmlinuz_final_filename = f"{qcow2_basename}.vmlinuz"
         self.initramfs_final_filename = f"{qcow2_basename}.initramfs"
