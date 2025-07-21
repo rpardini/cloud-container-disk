@@ -5,6 +5,7 @@ import click
 
 from armbian import Armbian
 from debian import Debian
+from fatso import Fatso
 from fedora import Fedora
 from rocky import Rocky
 from ubuntu import Ubuntu
@@ -147,6 +148,29 @@ def armbian(release, branch, extra_release):
     try:
         log.info("Armbian")
         d = Armbian(release, branch, extra_release)
+        d.cli_the_whole_shebang()
+    except:
+        log.exception("CLI failed")
+        sys.exit(1)
+
+
+@cli.command(help="Fatso Cloud images, extracts kernel and initrd from qcow2")
+@click.option(
+    "--flavor",
+    envvar="FLAVOR",
+    default="ka-rocky-cloud-k8s-el-containerd-qemu",
+    help="Fatso flavor (actual filename in GH Releases)",
+)
+@click.option(
+    "--fid",
+    envvar="ID",
+    default="ka-rocky9-k8s",
+    help="Fatso Flavor ID (name used in OCI tags and image slugs)",
+)
+def fatso(flavor, fid):
+    try:
+        log.info("Fatso")
+        d = Fatso(flavor, fid)
         d.cli_the_whole_shebang()
     except:
         log.exception("CLI failed")

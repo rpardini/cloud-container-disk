@@ -26,6 +26,7 @@ jobs:
           #- { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "" }, skipCache: true }
           - { distro: armbian, id: "armbian-bookworm-edge-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           - { distro: armbian, id: "armbian-trixie-edge-k8s-1.32", env: { RELEASE: "trixie", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
+          - { distro: fatso, id: "fatso-rocky9-k8s", env: { FLAVOR: "ka-rocky-cloud-k8s-el-containerd-qemu" }, skipCache: true }
           #- { distro: armbian, id: "armbian-bookworm-ddk-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           #- { distro: armbian, id: "armbian-bookworm-ddk-k8s-1.28", env: { RELEASE: "bookworm", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.28" }, skipCache: true }
           #- { distro: armbian, id: "armbian-trixie-edge", env: { RELEASE: "trixie", BRANCH: "edge", EXTRA_RELEASE: "" }, skipCache: true }
@@ -76,7 +77,7 @@ jobs:
         id: info
         env: ${{ matrix.env }}
         run: |
-          .venv/bin/python info/cli.py ${{ matrix.distro }}
+          ID="${{matrix.id}}" .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Commit changes to the examples directory
         run: |
@@ -109,7 +110,7 @@ jobs:
         if: ${{ (steps.info.outputs.uptodate == 'no') }}
         env: ${{ matrix.env }}
         run: |
-          DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
+          ID="${{matrix.id}}" DO_DOWNLOAD_QCOW2=yes DO_EXTRACT_KERNEL=yes DO_DOCKER_BUILD=yes DO_DOCKER_PUSH=yes \
             sudo --preserve-env .venv/bin/python info/cli.py ${{ matrix.distro }}
 
       - name: Fix permissions after sudo'ed run
