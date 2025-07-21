@@ -4,11 +4,10 @@ import os
 import string
 
 import rich.repr
-from github import Github
 
 from distro import DistroBaseInfo
 from distro_arch import DistroBaseArchInfo
-from utils import setup_logging
+from utils import setup_logging, GitHubReleaseReleaseAssets
 
 log: logging.Logger = setup_logging("armbian")
 
@@ -84,7 +83,6 @@ class ArmbianArchInfo(DistroBaseArchInfo):
         self.gh_release_version = None
         self.gh_asset_filename = None
         self.gh_asset_dl_url = None
-
         if self.distro.extra_release is None or self.distro.extra_release == "":
             searched_variant_token = f"-{self.distro.variant}.img"
         else:
@@ -92,44 +90,35 @@ class ArmbianArchInfo(DistroBaseArchInfo):
 
         searched_slugh_release_branch_tokens = f"{self.slug}_{self.distro.release}_{self.distro.branch}"
 
-        github = Github()
-        if os.environ.get("GITHUB_TOKEN", "") != "":
-            log.info("Using GITHUB_TOKEN from environment!")
-            github = Github(os.environ.get("GITHUB_TOKEN"))
-        else:
-            log.warning("GITHUB_TOKEN not set in environment, will use anonymous API calls (lower rate limits)!")
+        ghra = GitHubReleaseReleaseAssets(
+            github_org_repo="armsurvivors/armbian-release", release_tag=None
+        )  # fetch latest release's assets
+        release_info_assets = ghra.get_release_assets()
+        repo_release_assets = release_info_assets["assets"]
+        repo_release = release_info_assets["repo_release"]
 
-        repo = github.get_repo("armsurvivors/armbian-release")
-        log.debug(f"repo: {repo}")
-        repo_releases = repo.get_releases().get_page(0)
-        log.debug(f"repo_releases: {repo_releases}")
-        for repo_release in repo_releases:
-            log.debug(f"Trying repo_release '{repo_release.tag_name}' ")
-            # get the assets in the release
-            repo_release_assets = repo_release.get_assets()
-            log.debug(f"repo_release_assets: {repo_release_assets}")
-            for repo_release_asset in repo_release_assets:
-                asset_fn = repo_release_asset.name
-                asset_dl_url = repo_release_asset.browser_download_url
-                if not asset_fn.endswith(".qcow2.xz"):
-                    continue
-                log.debug(f"Trying repo_release_asset '{asset_fn}' ")
-                if searched_variant_token not in asset_fn:
-                    log.debug(
-                        f"Skipping repo_release_asset '{asset_fn}' because it does not contain '{searched_variant_token}'"
-                    )
-                    continue
-                if searched_slugh_release_branch_tokens not in asset_fn:
-                    log.debug(
-                        f"Skipping repo_release_asset '{asset_fn}' because it does not contain '{searched_slugh_release_branch_tokens}'"
-                    )
-                    continue
-                # If we got this far, we've the correct qcow2.xz asset.
-                log.info(f"Found! repo_release_asset '{asset_fn}' ")
-                self.gh_asset_filename = asset_fn
-                self.gh_asset_dl_url = asset_dl_url
-                self.gh_release_version = repo_release.tag_name
-            break  # @TODO only try the first release for now
+        log.debug(f"repo_release_assets: {repo_release_assets}")
+        for repo_release_asset in repo_release_assets:
+            asset_fn = repo_release_asset.name
+            asset_dl_url = repo_release_asset.browser_download_url
+            if not asset_fn.endswith(".qcow2.xz"):
+                continue
+            log.debug(f"Trying repo_release_asset '{asset_fn}' ")
+            if searched_variant_token not in asset_fn:
+                log.debug(
+                    f"Skipping repo_release_asset '{asset_fn}' because it does not contain '{searched_variant_token}'"
+                )
+                continue
+            if searched_slugh_release_branch_tokens not in asset_fn:
+                log.debug(
+                    f"Skipping repo_release_asset '{asset_fn}' because it does not contain '{searched_slugh_release_branch_tokens}'"
+                )
+                continue
+            # If we got this far, we've the correct qcow2.xz asset.
+            log.info(f"Found! repo_release_asset '{asset_fn}' ")
+            self.gh_asset_filename = asset_fn
+            self.gh_asset_dl_url = asset_dl_url
+            self.gh_release_version = repo_release.tag_name
 
         if self.gh_release_version is None:
             raise Exception(f"Could not find valid release for {self.slug}")
