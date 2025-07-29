@@ -28,7 +28,7 @@ spec:
           kernelBoot:
             container:
               # note: version must match the modules which are in the rootfs containerDisk
-              image: ghcr.io/rpardini/containerdisk/fatso-cloud-kernel-kv:rocky9-k8s-1018-20250721-41 # Or: ghcr.io/rpardini/containerdisk/fatso-cloud-kernel-kv:rocky9-k8s-latest
+              image: ghcr.io/rpardini/containerdisk/fatso-cloud-kernel-kv:rocky9-k8s-1018-20250729-42 # Or: ghcr.io/rpardini/containerdisk/fatso-cloud-kernel-kv:rocky9-k8s-latest
               imagePullPolicy: IfNotPresent # or:  Always # if using "latest" above
               initrdPath: /boot/initrd
               kernelPath: /boot/vmlinuz
@@ -63,7 +63,7 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
         - containerDisk: # this is an OCI image that has a disk/xxx.qcow2 inside. it is ephemeral, but rw
-            image: ghcr.io/rpardini/containerdisk/fatso-cloud-container-disk:rocky9-k8s-1018-20250721-41 # Or: ghcr.io/rpardini/containerdisk/fatso-cloud-container-disk:rocky9-k8s-latest
+            image: ghcr.io/rpardini/containerdisk/fatso-cloud-container-disk:rocky9-k8s-1018-20250729-42 # Or: ghcr.io/rpardini/containerdisk/fatso-cloud-container-disk:rocky9-k8s-latest
             imagePullPolicy: IfNotPresent # or: Always # if you use "latest" above
           name: containerdisk
         - cloudInitNoCloud: # auto create .ISOs for us, thanks.
