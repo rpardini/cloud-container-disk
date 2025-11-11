@@ -11,7 +11,7 @@ jobs:
     permissions:
       packages: write # to write to ghcr.io
       contents: write # to commit to the repo (examples)
-    
+
     runs-on: "ubuntu-latest" # ${{ matrix.arch.runner }}
     strategy:
       fail-fast: false # let other jobs try to complete if one fails
@@ -24,7 +24,7 @@ jobs:
           #- { distro: ubuntu, id: "ubuntu-jammy", env: { RELEASE: "jammy" } }
           #- { distro: ubuntu, id: "ubuntu-noble", env: { RELEASE: "noble" } }
           #- { distro: armbian, id: "armbian-bookworm-edge", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "" }, skipCache: true }
-          - { distro: armbian, id: "armbian-bookworm-edge-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
+          #- { distro: armbian, id: "armbian-bookworm-edge-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           - { distro: armbian, id: "armbian-trixie-edge-k8s-1.32", env: { RELEASE: "trixie", BRANCH: "edge", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
           - { distro: fatso, id: "rocky9-k8s", env: { FLAVOR: "ka-rocky-cloud-k8s-el-containerd-qemu" }, skipCache: true }
           #- { distro: armbian, id: "armbian-bookworm-ddk-k8s-1.32", env: { RELEASE: "bookworm", BRANCH: "ddk", EXTRA_RELEASE: "k8s-1.32" }, skipCache: true }
@@ -41,7 +41,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #ROCKY_MIRROR: "https://rocky-linux-us-west1.production.gcp.mirrors.ctrliq.cloud/pub/rocky"
     name: "${{ matrix.id }} (${{ matrix.distro }})"
-    
+
     steps:
 
       - name: Checkout build repo
@@ -87,7 +87,7 @@ jobs:
           git add examples || true
           git commit -m "Update examples for ${{ matrix.id }}" || true
           git push || true
-      
+
       # Two separate caching steps, since 2 qcow2 are too big to be cached together
       - name: Cache qcow2 arm64 - ${{ steps.info.outputs.qcow2-arm64 }}
         uses: actions/cache@v3

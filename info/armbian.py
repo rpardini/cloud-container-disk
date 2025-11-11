@@ -26,7 +26,7 @@ class Armbian(DistroBaseInfo):
         self.release = release
         self.extra_release = extra_release
         self.branch = branch
-        self.variant = "metadata-cloud"
+        self.variant = "metadata-serialconsole-cloud"
 
         super().__init__(
             arches=[
